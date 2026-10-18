@@ -1,3 +1,11 @@
 
+[project]
+name = "e-resbahub"
+version = "1.0.0"
+requires-python = ">=3.12"
+dependencies = [
+    "Flask>=3.0,<3.2"
+]
+
 [tool.vercel]
 entrypoint = "run:app"
