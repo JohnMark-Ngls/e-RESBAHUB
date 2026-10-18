@@ -1,197 +1,330 @@
+
 # e-RESBAHUB: Resident & Health Services System for the Barangay
 
-Web-based system for residents, barangay personnel, health center personnel and administrators.
+Web-based system for residents, barangay personnel, health center personnel, and administrators.
+
 Bulacan Agricultural State College - Institute of Computer Studies.
 
-**Tech stack:** Python 3 + Flask (back end) - SQLite (database) - HTML/CSS/JavaScript with Jinja templates (front end).
-No Node.js, no XAMPP, no database server to install. Only Python.
+**Tech Stack:** Python 3 + Flask (back end), SQLite (database), HTML/CSS/JavaScript with Jinja templates (front end).
 
----------------------------------------------------------------------
+No Node.js, no XAMPP, and no database server to install. Only Python is required.
 
-## 1. What the system does (matches the approved scope)
+---
 
-| Scope item | Where in the system |
+## 1. What the System Does
+
+| Scope Item | Where in the System |
 |---|---|
-| Resident registration & profile | `/register`, `/profile` (identity fields lock after verification) |
-| Online barangay requests + document upload | `/requests/new` (PDF/PNG/JPG, max 3 files, 5 MB) |
-| Request tracking & notifications | `/requests`, `/requests/<id>`, `/notifications` |
-| Administrative dashboard | `/staff/` (pending / ongoing / completed counts) |
-| Request approval & processing | Open a request > "Process request" (approve / reject / remarks) |
-| Barangay announcements | `/staff/announcements` (post), `/announcements` (everyone reads) |
-| Patient registration & records | `/health/patients` |
-| Appointment & queue management | `/health/appointments` (queue number auto-assigned per day) |
-| Health service management | Visit form: consultation, immunization, maternal & child health, health monitoring, other |
-| Patient visit monitoring | `/health/visits`, patient detail page (date, purpose, services, vitals) |
-| Search & record retrieval | `/search` + search boxes on every list |
-| Reports & monitoring | `/reports` (+ CSV download, print) |
-| User access control | 4 roles: Resident, Barangay Personnel, Health Center Personnel, Administrator |
+| Resident registration and profile | `/register`, `/profile` |
+| Online barangay requests and document upload | `/requests/new` |
+| Request tracking and notifications | `/requests`, `/requests/<id>`, `/notifications` |
+| Administrative dashboard | `/staff/` |
+| Request approval and processing | Open a request and select Process Request |
+| Barangay announcements | `/staff/announcements`, `/announcements` |
+| Patient registration and records | `/health/patients` |
+| Appointment and queue management | `/health/appointments` |
+| Health service management | Consultation, immunization, maternal and child health, health monitoring, and other services |
+| Patient visit monitoring | `/health/visits` and patient detail pages |
+| Search and record retrieval | `/search` and search boxes on lists |
+| Reports and monitoring | `/reports`, including CSV download and printing |
+| User access control | Resident, Barangay Personnel, Health Center Personnel, Administrator |
 
----------------------------------------------------------------------
+---
 
-## 2. One-time setup (Windows, step by step)
+## 2. One-Time Setup (Windows)
 
 ### Step 1 - Install Python
-1. Go to https://www.python.org/downloads/ and install Python 3.10 or newer.
-2. **Tick "Add python.exe to PATH"** on the first installer screen, then click Install.
-3. Open **Command Prompt** (press Windows key, type `cmd`, Enter) and check:
-   ```
-   python --version
-   ```
-   It must print `Python 3.x.x`. (On Mac/Linux use `python3` instead of `python` everywhere below.)
 
-### Step 2 - Get the project
-- If your team uses GitHub (see Section 5): `git clone <repo-url>` then `cd e-resbahub`
-- Or unzip the project folder and open Command Prompt inside it:
-  `cd C:\path\to\e-resbahub`
+1. Visit https://www.python.org/downloads/.
+2. Install a Python version supported by the project's dependencies.
+3. Enable **Add Python to PATH** during installation.
+4. Open Command Prompt or the VS Code terminal and run:
 
-### Step 3 - Create a virtual environment (keeps packages tidy)
+```bash
+python --version
 ```
+
+### Step 2 - Get the Project
+
+If you downloaded the project as a ZIP file, extract it and open the extracted `e-resbahub` folder in VS Code.
+
+If your team uses GitHub, clone the repository instead:
+
+```bash
+git clone <repo-url>
+cd e-resbahub
+```
+
+Make sure the folder contains `run.py` and `requirements.txt`.
+
+### Step 3 - Create a Virtual Environment
+
+```bash
 python -m venv venv
-venv\Scripts\activate
-```
-Your prompt should now start with `(venv)`. (Mac/Linux: `source venv/bin/activate`)
-
-### Step 4 - Install the packages
-```
-pip install -r requirements.txt
 ```
 
-### Step 5 - Create the database and the first admin
+Activate it in Windows PowerShell:
+
+```powershell
+.\venv\Scripts\Activate.ps1
 ```
+
+If PowerShell blocks activation, you can use Command Prompt:
+
+```bat
+venv\Scripts\activate.bat
+```
+
+Your terminal should show `(venv)` when activation succeeds.
+
+### Step 4 - Install the Packages
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+### Step 5 - Create the Database and Demo Accounts
+
+```bash
 python seed.py --demo
 ```
-This creates `instance/resbahub.db` (the database) and these accounts:
+
+This initializes the local database and creates demo accounts.
 
 | Username | Password | Role |
 |---|---|---|
-| admin | Admin@12345 | Administrator |
-| barangay1 | Demo@12345 | Barangay Personnel |
-| health1 | Demo@12345 | Health Center Personnel |
-| resident1 | Demo@12345 | Resident (verified) |
-| resident2 | Demo@12345 | Resident (NOT verified) |
+| `admin` | `Admin@12345` | Administrator |
+| `barangay1` | `Demo@12345` | Barangay Personnel |
+| `health1` | `Demo@12345` | Health Center Personnel |
+| `resident1` | `Demo@12345` | Resident (verified) |
+| `resident2` | `Demo@12345` | Resident (not verified) |
 
-Use `python seed.py` (without `--demo`) for a clean system with only the admin.
-**Change the admin password right after your first login** (top bar > Password).
+Use `python seed.py` without `--demo` for a clean system with only the administrator, according to the project's setup instructions.
 
-### Step 6 - Run the system
-```
-python run.py
-```
-Open your browser at **http://127.0.0.1:5000** . Stop the server with `Ctrl + C`.
+**Change the administrator password after your first login.**
 
-### Next time you work on it
-```
-cd e-resbahub
-venv\Scripts\activate
+### Step 6 - Run the System
+
+```bash
 python run.py
 ```
 
----------------------------------------------------------------------
+Open your browser at:
 
-## 3. Try it (suggested demo flow)
+http://127.0.0.1:5000
 
-1. Log in as `resident1` > **New Request** > choose *Barangay Clearance*, write a purpose, upload a PNG/JPG/PDF > Submit. Note the reference number.
-2. Log out, log in as `barangay1` > **Requests** > open it > change status to *Processing / Approved* (a *Rejected* status needs a remark) > later *Completed*.
-3. Log in again as `resident1` > **Notifications** and **My Requests** show the new status and history.
-4. As `barangay1` > **Residents** > open `resident2` > tick *Verified resident* > Save. `resident2` can now submit requests.
-5. As `health1` > **Patients** > *New patient* > **Book appointment** (queue number is automatic) > on the day, change status Waiting > In Consultation and **Record visit**.
-6. As `health1` or `barangay1` > **Reports** to see the summaries and download CSV files.
-7. As `admin` > **Admin** to create staff accounts, manage services (and fees), and read the audit log.
+Keep the terminal running while using the application. Press `Ctrl + C` to stop the server.
 
----------------------------------------------------------------------
+### Next Time You Work on the Project
 
-## 4. Project structure (who edits what)
-
+```powershell
+.\venv\Scripts\Activate.ps1
+python run.py
 ```
+
+---
+
+## 3. Suggested Demo Flow
+
+1. Log in as `resident1`. Submit a new Barangay Clearance request with a purpose and an allowed document.
+2. Log in as `barangay1`. Open the request, process it, and update its status.
+3. Log in again as `resident1`. Check My Requests and Notifications.
+4. As `barangay1`, verify `resident2` if required by the system.
+5. Log in as `health1`. Register a patient, book an appointment, and record a visit.
+6. As `health1` or `barangay1`, open Reports to view summaries and download CSV files.
+7. As `admin`, manage staff accounts, services, fees, and audit logs.
+
+---
+
+## 4. Project Structure
+
+```text
 e-resbahub/
-  run.py                  start the server
-  seed.py                 creates admin / demo data
-  requirements.txt        Python packages
-  tests/test_app.py       automated tests (27)
-  resbahub/
-    __init__.py           app setup, security (CSRF, headers), error pages
-    schema.sql            DATABASE: all tables           <- Database Programmer
-    db.py                 database connection helpers    <- Database Programmer
-    utils.py              validation, notifications, audit log, upload checks
-    auth.py               login, register, roles         <- Back-End Programmer
-    resident.py           resident pages & requests      <- Back-End Programmer
-    staff.py              barangay personnel pages       <- Back-End Programmer
-    health.py             health center pages            <- Back-End Programmer
-    admin.py              users, services, audit log     <- Back-End Programmer
-    reports.py            reports, CSV export, search    <- Back-End Programmer
-    templates/            HTML pages (Jinja)             <- Front-End Programmer / Designer
-    static/css/style.css  design (colors, layout)        <- Digital Designer
-    static/js/app.js      small browser scripts          <- Front-End Programmer
-  instance/               created automatically: database, uploaded files, secret key (NOT in Git)
+├── run.py
+├── seed.py
+├── requirements.txt
+├── tests/
+│   └── test_app.py
+├── resbahub/
+│   ├── __init__.py
+│   ├── schema.sql
+│   ├── db.py
+│   ├── utils.py
+│   ├── auth.py
+│   ├── resident.py
+│   ├── staff.py
+│   ├── health.py
+│   ├── admin.py
+│   ├── reports.py
+│   ├── templates/
+│   └── static/
+│       ├── css/
+│       │   └── style.css
+│       └── js/
+│           └── app.js
+└── instance/
 ```
 
-### Database tables
-`users`, `residents`, `services`, `requests`, `request_documents`, `request_history`, `notifications`,
-`announcements`, `patients`, `appointments`, `visits`, `audit_log`.
-Open the database with the free **DB Browser for SQLite** (https://sqlitebrowser.org) > File > Open > `instance/resbahub.db`.
+### Main File Responsibilities
 
-### Security built in
-Password hashing - CSRF protection on every form - login throttling (5 wrong tries = 5-minute wait) - role checks on every page -
-residents can only see their own requests - upload type/size/content checks with random stored names - SQL injection safe (parameterized queries) -
-XSS safe (auto-escaped templates) - CSV formula-injection guard - secure HTTP headers - audit log - Data Privacy consent at registration.
+- `run.py` - Starts the Flask development server.
+- `seed.py` - Initializes the database and creates administrator or demo data.
+- `requirements.txt` - Lists required Python packages.
+- `resbahub/__init__.py` - Application setup, security configuration, and error pages.
+- `resbahub/schema.sql` - Database table definitions.
+- `resbahub/db.py` - Database connection helpers.
+- `resbahub/utils.py` - Validation, notifications, audit logging, and upload checks.
+- `resbahub/auth.py` - Login, registration, and role management.
+- `resbahub/resident.py` - Resident pages and requests.
+- `resbahub/staff.py` - Barangay personnel pages.
+- `resbahub/health.py` - Health center pages.
+- `resbahub/admin.py` - User management, services, and audit logs.
+- `resbahub/reports.py` - Reports, CSV exports, and search.
+- `resbahub/templates/` - HTML templates rendered by Jinja.
+- `resbahub/static/css/style.css` - Website styling.
+- `resbahub/static/js/app.js` - Browser-side JavaScript.
 
----------------------------------------------------------------------
+The `instance/` folder is used for local application data. Do not upload private databases, uploaded documents, or secret keys to GitHub.
 
-## 5. Team repository (GitHub) - everyone can access and edit
+### Database Tables
 
-1. **One person (e.g. Project Manager)** creates a free account at https://github.com > **New repository** > name `e-resbahub` > *Private* > create (do not add a README).
-2. Repository **Settings > Collaborators > Add people** > add every teammate's GitHub username (they accept the email invite).
-3. Everyone installs **Git** (https://git-scm.com/download/win) and sets their identity once:
-   ```
-   git config --global user.name "Your Name"
-   git config --global user.email "you@example.com"
-   ```
-4. The person who has this project folder uploads it (first time only), inside the project folder:
-   ```
-   git init
-   git add .
-   git commit -m "Initial e-RESBAHUB system"
-   git branch -M main
-   git remote add origin https://github.com/<owner>/e-resbahub.git
-   git push -u origin main
-   ```
-   `.gitignore` already keeps the database, uploads and secret key **out** of GitHub.
-5. Everyone else downloads it: `git clone https://github.com/<owner>/e-resbahub.git` and follows Section 2 (Steps 3-6).
+The project documentation identifies these tables:
 
-### Daily teamwork routine (avoid overwriting each other)
+- `users`
+- `residents`
+- `services`
+- `requests`
+- `request_documents`
+- `request_history`
+- `notifications`
+- `announcements`
+- `patients`
+- `appointments`
+- `visits`
+- `audit_log`
+
+You can inspect the local SQLite database using DB Browser for SQLite:
+
+https://sqlitebrowser.org/
+
+### Security Features Described in the Project
+
+- Password hashing
+- CSRF protection
+- Login throttling
+- Role-based access checks
+- Resident request access restrictions
+- Upload validation
+- Parameterized SQL queries
+- Template output escaping
+- CSV formula-injection protection
+- Security headers
+- Audit logging
+- Data privacy consent during registration
+
+Verify these features against the actual application code before claiming they are all fully implemented.
+
+---
+
+## 5. Team Repository (GitHub)
+
+### Initial Repository Setup
+
+1. Create a GitHub repository or use your existing team repository.
+2. Add teammates through the repository's Settings and Collaborators section.
+3. Configure your Git identity once:
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
 ```
-git pull                                  # 1. get the latest code BEFORE you start
-git checkout -b feature/short-name        # 2. work on your own branch (e.g. feature/patient-form)
-   ... edit files, test with python run.py ...
-python -m unittest                        # 3. run the tests; they should say OK
+
+Replace the example name and email with your own details.
+
+### Uploading the Project for the First Time
+
+Run these commands only when initializing a new local Git repository:
+
+```bash
+git init
+git add .
+git commit -m "Initial e-RESBAHUB system"
+git branch -M main
+git remote add origin https://github.com/<owner>/e-resbahub.git
+git push -u origin main
+```
+
+Replace `<owner>` with the actual GitHub username or organization.
+
+**If your repository already exists and has commits, do not blindly repeat these commands.** Check your existing remote and repository history first to avoid conflicts or overwriting work.
+
+### Daily Teamwork Routine
+
+```bash
+git pull
+git checkout -b feature/short-name
+
+# Edit files and test the application.
+python run.py
+
+# Run the tests.
+python -m unittest
+
 git add .
 git commit -m "Describe what you changed"
-git push -u origin feature/short-name     # 4. upload your branch
+git push -u origin feature/short-name
 ```
-Then on GitHub click **Compare & pull request** > a teammate reviews > **Merge**. Everyone runs `git checkout main` and `git pull` afterwards.
-Tip: let each member mainly edit their own area (see "who edits what") so merge conflicts are rare. Never commit the `instance/` or `venv/` folders.
 
----------------------------------------------------------------------
+After pushing, create a pull request on GitHub. Have a teammate review and merge it. Then update your local main branch:
+
+```bash
+git checkout main
+git pull origin main
+```
+
+Avoid committing `venv/`, private environment files, local databases, uploaded documents, or secret keys.
+
+---
 
 ## 6. Troubleshooting
 
-| Problem | Fix |
+| Problem | Solution |
 |---|---|
-| `'python' is not recognized` | Reinstall Python and tick "Add python.exe to PATH"; reopen Command Prompt. |
-| `No module named flask` | You forgot `venv\Scripts\activate` or `pip install -r requirements.txt`. |
-| `Address already in use` | Another program uses port 5000. Edit `port=5000` in `run.py` to `5001` and open that port. |
-| PowerShell says scripts are disabled | Use **Command Prompt** (cmd), or run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once. |
-| Forgot admin password | Delete the `instance` folder, run `python seed.py` again (this erases all data!). |
-| Want a fresh demo | Stop the server, delete the `instance` folder, run `python seed.py --demo`. |
-| "Form token missing or expired" | Refresh the page and submit again (the session expired). |
-| Upload rejected | Only real PDF/PNG/JPG files, max 3 files and 5 MB total. |
+| `python` is not recognized | Install Python and enable Add Python to PATH. Restart VS Code. |
+| `No module named flask` | Activate the virtual environment and run `python -m pip install -r requirements.txt`. |
+| Address already in use | Stop the other process using port 5000 or configure another port in the application. |
+| PowerShell says scripts are disabled | Use Command Prompt or temporarily adjust the PowerShell execution policy for the current terminal session. |
+| Forgot administrator password | Follow the project's verified password-reset procedure. Do not delete the database unless you intend to erase its data. |
+| Want a fresh demo | Back up any needed data before resetting the local database and running the seed script again. |
+| Form token missing or expired | Refresh the page and submit the form again. |
+| Upload rejected | Check that the file type and size meet the application's configured limits. |
 
-## 7. Settings you may change
-- Barangay name shown in the footer: set an environment variable `BARANGAY_NAME` (Windows: `set BARANGAY_NAME=Barangay Pinaod`) before `python run.py`, or edit `resbahub/__init__.py`.
-- Require verification before requests: `REQUIRE_VERIFIED_FOR_REQUESTS` in `resbahub/__init__.py` (True/False).
-- Service fees are SAMPLE values: edit them in **Admin > Barangay services** (add new services there too).
+---
 
-## 8. Before real-world (production) use
-This is a complete academic system. Before using it with real residents: run it with a production server (e.g. `pip install waitress` then `waitress-serve --port=8000 --call resbahub:create_app`),
-use HTTPS, set a strong `SECRET_KEY`, back up `instance/` regularly, and get the barangay's approval on data-privacy handling (RA 10173).
-Moving to MySQL/PostgreSQL later means rewriting `db.py` and small SQL differences in `schema.sql`.
+## 7. Settings You May Change
+
+- **Barangay name:** The project documentation identifies `BARANGAY_NAME` as an environment setting or a value configurable in `resbahub/__init__.py`.
+- **Resident verification:** The documentation identifies `REQUIRE_VERIFIED_FOR_REQUESTS` as a setting in `resbahub/__init__.py`.
+- **Service fees:** Sample service fees may be configurable through the Admin section.
+
+Check the actual source code before changing settings, since the implementation may differ from the documentation.
+
+---
+
+## 8. Before Real-World Production Use
+
+This project is intended as an academic system. Before using it with real residents:
+
+1. Use a production-ready application server instead of Flask's development server.
+2. Configure HTTPS.
+3. Set a strong, private `SECRET_KEY`.
+4. Arrange secure database backups and access controls.
+5. Protect uploaded files and private resident or patient information.
+6. Obtain the necessary barangay approvals and review compliance with the Philippine Data Privacy Act of 2012 (RA 10173).
+7. Test authentication, authorization, input validation, backups, and recovery procedures.
+
+The project documentation indicates that moving from SQLite to MySQL or PostgreSQL would require changes to the database connection code and potentially SQL statements in `schema.sql`.
+
+---
+
+**End of README**
