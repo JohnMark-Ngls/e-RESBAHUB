@@ -1,9 +1,9 @@
 
 """e-RESBAHUB application factory."""
+
 import os
 import secrets
 from datetime import date, datetime, timedelta
-from pathlib import Path
 
 from flask import Flask, abort, g, render_template, request, session
 
@@ -12,46 +12,51 @@ from .utils import ROLE_LABELS
 
 
 def _secret_key(instance_path):
-    """Use SECRET_KEY from the environment, else create/read instance/secret_key."""
+    """Use SECRET_KEY from the environment or create a persistent local key."""
     env = os.environ.get("SECRET_KEY")
+
     if env:
         return env
 
+    os.makedirs(instance_path, exist_ok=True)
     path = os.path.join(instance_path, "secret_key")
 
     if os.path.exists(path):
-        with open(path, encoding="utf-8") as fh:
-            return fh.read().strip()
+        with open(path, encoding="utf-8") as file:
+            key = file.read().strip()
+
+        if key:
+            return key
 
     key = secrets.token_hex(32)
 
-    with open(path, "w", encoding="utf-8") as fh:
-        fh.write(key)
+    with open(path, "w", encoding="utf-8") as file:
+        file.write(key)
 
     return key
 
 
 def create_app(test_config=None):
+    """Create and configure the Flask application."""
     app = Flask(__name__, instance_relative_config=True)
 
-    is_vercel = os.environ.get("VERCEL") == "1" or bool(
-        os.environ.get("VERCEL")
-    )
+    is_vercel = bool(os.environ.get("VERCEL"))
 
-    # The deployment directory is read-only on Vercel.
     if not is_vercel:
         os.makedirs(app.instance_path, exist_ok=True)
 
-    # Configure paths before initializing the database.
-    if is_vercel:
-        database_path = "/tmp/resbahub.db"
-        upload_path = "/tmp/e-resbahub-uploads"
-    else:
-        database_path = os.path.join(app.instance_path, "resbahub.db")
-        upload_path = os.path.join(app.instance_path, "uploads")
+    upload_path = (
+        "/tmp/e-resbahub-uploads"
+        if is_vercel
+        else os.path.join(app.instance_path, "uploads")
+    )
 
     app.config.from_mapping(
-        DATABASE=database_path,
+        DB_HOST=os.environ.get("DB_HOST", "127.0.0.1"),
+        DB_PORT=int(os.environ.get("DB_PORT", "3306")),
+        DB_USER=os.environ.get("DB_USER", "root"),
+        DB_PASSWORD=os.environ.get("DB_PASSWORD", ""),
+        DB_NAME=os.environ.get("DB_NAME", "eresbahub"),
         UPLOAD_FOLDER=upload_path,
         MAX_CONTENT_LENGTH=5 * 1024 * 1024,
         ALLOWED_EXTENSIONS={"pdf", "png", "jpg", "jpeg"},
@@ -68,34 +73,34 @@ def create_app(test_config=None):
     if test_config:
         app.config.update(test_config)
 
-    # Use a stable secret key on Vercel by setting SECRET_KEY
-    # in Project Settings > Environment Variables.
+    # Protect the main database from automated tests.
+    if app.config.get("TESTING"):
+        requested_db = (test_config or {}).get("DB_NAME")
+
+        if requested_db not in (None, "eresbahub_test"):
+            raise RuntimeError(
+                "TESTING mode may only use the eresbahub_test database."
+            )
+
+        app.config["DB_NAME"] = "eresbahub_test"
+
     if not app.config.get("SECRET_KEY"):
         if is_vercel:
-            app.config["SECRET_KEY"] = secrets.token_hex(32)
-        else:
-            app.config["SECRET_KEY"] = _secret_key(app.instance_path)
+            raise RuntimeError(
+                "Set the SECRET_KEY environment variable in Vercel."
+            )
 
-    # Create the writable upload directory.
+        app.config["SECRET_KEY"] = _secret_key(app.instance_path)
+
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     app.teardown_appcontext(db.close_db)
 
-    # Initialize tables only in a writable database location.
-    with app.app_context():
-        db.init_db()
-
-    # -----------------------------------------------------------
-    # Blueprints
-    # -----------------------------------------------------------
     from . import admin, auth, health, reports, resident, staff
 
     for module in (auth, resident, staff, health, admin, reports):
         app.register_blueprint(module.bp)
 
-    # -----------------------------------------------------------
-    # Request hooks
-    # -----------------------------------------------------------
     @app.before_request
     def load_user():
         g.user = None
@@ -103,16 +108,16 @@ def create_app(test_config=None):
         if request.endpoint == "static":
             return
 
-        uid = session.get("user_id")
+        user_id = session.get("user_id")
 
-        if uid is not None:
+        if user_id is not None:
             user = db.query(
                 """
                 SELECT id, username, email, full_name, role, is_active
                 FROM users
                 WHERE id = ?
                 """,
-                (uid,),
+                (user_id,),
                 one=True,
             )
 
@@ -142,25 +147,23 @@ def create_app(test_config=None):
                 )
 
     @app.after_request
-    def security_headers(resp):
-        resp.headers["X-Content-Type-Options"] = "nosniff"
-        resp.headers["X-Frame-Options"] = "DENY"
-        resp.headers["Referrer-Policy"] = "same-origin"
-        resp.headers["Content-Security-Policy"] = (
+    def security_headers(response):
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "same-origin"
+        response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data:"
         )
 
         if request.endpoint != "static":
-            resp.headers["Cache-Control"] = "no-store"
+            response.headers["Cache-Control"] = "no-store"
 
-        return resp
+        return response
 
-    # -----------------------------------------------------------
-    # Templating and CSRF token
-    # -----------------------------------------------------------
     def csrf_token():
+        """Create and return a CSRF token for the current session."""
         if "csrf_token" not in session:
             session["csrf_token"] = secrets.token_hex(16)
 
@@ -170,11 +173,12 @@ def create_app(test_config=None):
 
     @app.context_processor
     def inject_globals():
+        """Make common user and application values available to templates."""
         user = g.get("user")
         unread = 0
 
         if user is not None and user["role"] == "resident":
-            unread = db.query(
+            result = db.query(
                 """
                 SELECT COUNT(*) AS c
                 FROM notifications
@@ -182,7 +186,8 @@ def create_app(test_config=None):
                 """,
                 (user["id"],),
                 one=True,
-            )["c"]
+            )
+            unread = result["c"]
 
         return {
             "current_user": user,
@@ -192,11 +197,9 @@ def create_app(test_config=None):
             "today": date.today().isoformat(),
         }
 
-    # -----------------------------------------------------------
-    # Template filters
-    # -----------------------------------------------------------
     @app.template_filter("dt")
     def fmt_datetime(value):
+        """Format database date and datetime values for display."""
         if not value:
             return "-"
 
@@ -205,9 +208,11 @@ def create_app(test_config=None):
             ("%Y-%m-%d", "%b %d, %Y"),
         )
 
-        for fmt, output_format in formats:
+        for input_format, output_format in formats:
             try:
-                return datetime.strptime(value, fmt).strftime(output_format)
+                return datetime.strptime(
+                    str(value), input_format
+                ).strftime(output_format)
             except (ValueError, TypeError):
                 continue
 
@@ -215,8 +220,9 @@ def create_app(test_config=None):
 
     @app.template_filter("age")
     def fmt_age(value):
+        """Calculate age from a YYYY-MM-DD birthdate."""
         try:
-            born = datetime.strptime(value, "%Y-%m-%d").date()
+            born = datetime.strptime(str(value), "%Y-%m-%d").date()
         except (ValueError, TypeError):
             return "-"
 
@@ -228,9 +234,6 @@ def create_app(test_config=None):
             - ((today.month, today.day) < (born.month, born.day))
         )
 
-    # -----------------------------------------------------------
-    # Error pages
-    # -----------------------------------------------------------
     titles = {
         400: "Bad request",
         403: "Access denied",
@@ -240,20 +243,19 @@ def create_app(test_config=None):
         500: "Something went wrong",
     }
 
-    def handle_error(err):
-        code = getattr(err, "code", 500) or 500
-        message = getattr(err, "description", "")
+    def handle_error(error):
+        """Render a consistent page for common HTTP errors."""
+        code = getattr(error, "code", 500) or 500
+        message = getattr(error, "description", "")
 
         if code == 413:
             message = (
                 "The upload is too large. "
                 "The maximum total size is 5 MB."
             )
-
-        if code == 403:
+        elif code == 403:
             message = "You do not have permission to open this page."
-
-        if code == 500:
+        elif code == 500:
             message = (
                 "An unexpected error occurred. "
                 "Please try again or contact the administrator."
@@ -271,5 +273,9 @@ def create_app(test_config=None):
 
     for code in titles:
         app.register_error_handler(code, handle_error)
+
+    # Verify the configured database and required tables at startup.
+    with app.app_context():
+        db.init_db()
 
     return app

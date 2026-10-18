@@ -1,29 +1,24 @@
 
-"""Database helpers for e-RESBAHUB."""
+"""Database helpers for e-RESBAHUB using MariaDB."""
 
-import sqlite3
-from pathlib import Path
-
+import mysql.connector
 from flask import current_app, g
-
-SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
 def get_db():
-    """Return the current SQLite connection."""
+    """Return the current MariaDB connection."""
     if "db" not in g:
-        database_path = Path(current_app.config["DATABASE"])
-        database_path.parent.mkdir(parents=True, exist_ok=True)
+        config = current_app.config
 
-        conn = sqlite3.connect(
-            str(database_path),
-            timeout=20,
+        g.db = mysql.connector.connect(
+            host=config.get("DB_HOST", "127.0.0.1"),
+            port=int(config.get("DB_PORT", 3306)),
+            user=config.get("DB_USER", "root"),
+            password=config.get("DB_PASSWORD", ""),
+            database=config.get("DB_NAME", "eresbahub"),
+            charset="utf8mb4",
+            autocommit=False,
         )
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA foreign_keys = ON")
-        conn.execute("PRAGMA journal_mode = DELETE")
-
-        g.db = conn
 
     return g.db
 
@@ -31,22 +26,39 @@ def get_db():
 def execute(sql, params=(), commit=True):
     """Execute a SQL statement and optionally commit it."""
     conn = get_db()
-    cursor = conn.execute(sql, params)
+    cursor = conn.cursor(dictionary=True)
 
-    if commit:
-        conn.commit()
+    try:
+        sql = sql.replace("?", "%s")
+        cursor.execute(sql, params)
 
-    return cursor
+        if commit:
+            conn.commit()
+
+        return cursor
+
+    except Exception:
+        cursor.close()
+        conn.rollback()
+        raise
 
 
 def query(sql, params=(), one=False):
     """Run a SELECT query and return rows."""
-    cursor = get_db().execute(sql, params)
+    conn = get_db()
+    cursor = conn.cursor(dictionary=True)
 
-    if one:
-        return cursor.fetchone()
+    try:
+        sql = sql.replace("?", "%s")
+        cursor.execute(sql, params)
 
-    return cursor.fetchall()
+        if one:
+            return cursor.fetchone()
+
+        return cursor.fetchall()
+
+    finally:
+        cursor.close()
 
 
 def commit():
@@ -64,16 +76,26 @@ def close_db(exc=None):
     conn = g.pop("db", None)
 
     if conn is not None:
-        if exc is not None:
-            conn.rollback()
-
-        conn.close()
+        try:
+            if exc is not None:
+                conn.rollback()
+        finally:
+            conn.close()
 
 
 def init_db():
-    """Create database tables if they do not exist."""
+    """Verify the MariaDB connection and required tables."""
     conn = get_db()
-    schema = SCHEMA_PATH.read_text(encoding="utf-8")
+    cursor = conn.cursor()
 
-    conn.executescript(schema)
-    conn.commit()
+    try:
+        cursor.execute("SHOW TABLES")
+        tables = cursor.fetchall()
+
+        if not tables:
+            raise RuntimeError(
+                "No tables found in the eresbahub database. "
+                "Import the schema using phpMyAdmin first."
+            )
+    finally:
+        cursor.close()

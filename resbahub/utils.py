@@ -11,9 +11,7 @@ from flask import current_app, g
 from . import db
 
 
-# -----------------------------------------------------------------
 # Constants
-# -----------------------------------------------------------------
 
 ROLE_LABELS = {
     "resident": "Resident",
@@ -88,9 +86,7 @@ BP_RE = re.compile(r"^\d{2,3}/\d{2,3}$")
 TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 
-# -----------------------------------------------------------------
 # General helpers
-# -----------------------------------------------------------------
 
 def parse_date(value):
     """Parse a YYYY-MM-DD date. Return None if invalid."""
@@ -112,7 +108,7 @@ def display_name(first, middle, last, suffix=None):
 
 
 def like(text):
-    """Build a safe LIKE pattern. Use with LIKE ? ESCAPE '\\'."""
+    """Build a LIKE pattern that escapes special characters."""
     escaped = (
         text.replace("\\", "\\\\")
         .replace("%", "\\%")
@@ -133,9 +129,7 @@ def password_problem(pw):
     return None
 
 
-# -----------------------------------------------------------------
 # Resident form validation
-# -----------------------------------------------------------------
 
 RESIDENT_FIELDS = [
     "first_name",
@@ -172,11 +166,7 @@ def read_resident_form(form):
 
 
 def validate_resident(data, identity=True):
-    """
-    Validate resident profile fields.
-
-    identity=False skips name, birthdate, and sex checks.
-    """
+    """Validate resident profile fields."""
     errors = []
 
     for key, limit in _LIMITS.items():
@@ -197,10 +187,7 @@ def validate_resident(data, identity=True):
 
         if born is None:
             errors.append("Please enter a valid birthdate.")
-        elif (
-            born > date.today()
-            or (date.today().year - born.year) > 120
-        ):
+        elif born > date.today() or (date.today().year - born.year) > 120:
             errors.append("Birthdate is not realistic.")
 
         if data["sex"] not in SEX:
@@ -220,9 +207,7 @@ def validate_resident(data, identity=True):
     return errors
 
 
-# -----------------------------------------------------------------
 # Notifications and audit log
-# -----------------------------------------------------------------
 
 def notify(user_id, message, link=None, commit=True):
     """Insert a notification and optionally commit the transaction."""
@@ -251,9 +236,7 @@ def audit(action, detail="", user_id=None, commit=True):
     )
 
 
-# -----------------------------------------------------------------
 # File uploads
-# -----------------------------------------------------------------
 
 _MAGIC = {
     "pdf": [b"%PDF"],
@@ -271,16 +254,19 @@ def _ext(filename):
 def upload_problem(fs):
     """Return an error if the uploaded file is unacceptable, else None."""
     name = fs.filename or ""
-    ext = _ext(name)
+    extension = _ext(name)
 
-    if ext not in current_app.config["ALLOWED_EXTENSIONS"]:
+    if extension not in current_app.config["ALLOWED_EXTENSIONS"]:
         return f'"{name}" is not allowed. Upload PDF, PNG or JPG files only.'
 
     head = fs.stream.read(8)
     fs.stream.seek(0)
 
-    if not any(head.startswith(signature) for signature in _MAGIC[ext]):
-        return f'"{name}" is not a valid {ext.upper()} file.'
+    if not any(
+        head.startswith(signature)
+        for signature in _MAGIC[extension]
+    ):
+        return f'"{name}" is not a valid {extension.upper()} file.'
 
     return None
 
