@@ -61,7 +61,7 @@ def create_app(test_config=None):
         PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
         BARANGAY_NAME=os.environ.get(
             "BARANGAY_NAME",
-            "Barangay Hall, San Ildefonso, Bulacan",
+            "Barangay Hall, San Miguel, Bulacan",
         ),
     )
 
