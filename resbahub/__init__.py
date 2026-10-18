@@ -3,6 +3,7 @@
 import os
 import secrets
 from datetime import date, datetime, timedelta
+from pathlib import Path
 
 from flask import Flask, abort, g, render_template, request, session
 
@@ -33,18 +34,25 @@ def _secret_key(instance_path):
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
 
-    # Local development can use the instance directory.
-    # Vercel's application directory is read-only.
-    if not os.environ.get("VERCEL"):
+    is_vercel = os.environ.get("VERCEL") == "1" or bool(
+        os.environ.get("VERCEL")
+    )
+
+    # The deployment directory is read-only on Vercel.
+    if not is_vercel:
         os.makedirs(app.instance_path, exist_ok=True)
 
+    # Configure paths before initializing the database.
+    if is_vercel:
+        database_path = "/tmp/resbahub.db"
+        upload_path = "/tmp/e-resbahub-uploads"
+    else:
+        database_path = os.path.join(app.instance_path, "resbahub.db")
+        upload_path = os.path.join(app.instance_path, "uploads")
+
     app.config.from_mapping(
-        DATABASE=os.path.join(app.instance_path, "resbahub.db"),
-        UPLOAD_FOLDER=(
-            "/tmp/e-resbahub-uploads"
-            if os.environ.get("VERCEL")
-            else os.path.join(app.instance_path, "uploads")
-        ),
+        DATABASE=database_path,
+        UPLOAD_FOLDER=upload_path,
         MAX_CONTENT_LENGTH=5 * 1024 * 1024,
         ALLOWED_EXTENSIONS={"pdf", "png", "jpg", "jpeg"},
         REQUIRE_VERIFIED_FOR_REQUESTS=True,
@@ -60,19 +68,20 @@ def create_app(test_config=None):
     if test_config:
         app.config.update(test_config)
 
-    # On Vercel, use an environment variable for a stable secret key.
-    # Locally, use the existing instance/secret_key file when available.
+    # Use a stable secret key on Vercel by setting SECRET_KEY
+    # in Project Settings > Environment Variables.
     if not app.config.get("SECRET_KEY"):
-        if os.environ.get("VERCEL"):
+        if is_vercel:
             app.config["SECRET_KEY"] = secrets.token_hex(32)
         else:
             app.config["SECRET_KEY"] = _secret_key(app.instance_path)
 
-    # Create upload folder only after selecting its location.
+    # Create the writable upload directory.
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     app.teardown_appcontext(db.close_db)
 
+    # Initialize tables only in a writable database location.
     with app.app_context():
         db.init_db()
 
@@ -199,7 +208,7 @@ def create_app(test_config=None):
         for fmt, output_format in formats:
             try:
                 return datetime.strptime(value, fmt).strftime(output_format)
-            except ValueError:
+            except (ValueError, TypeError):
                 continue
 
         return value
