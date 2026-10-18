@@ -33,19 +33,18 @@ def _secret_key(instance_path):
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
 
-    os.makedirs(app.instance_path, exist_ok=True)
+    # Local development can use the instance directory.
+    # Vercel's application directory is read-only.
+    if not os.environ.get("VERCEL"):
+        os.makedirs(app.instance_path, exist_ok=True)
 
     app.config.from_mapping(
         DATABASE=os.path.join(app.instance_path, "resbahub.db"),
-
-        # Use temporary storage on Vercel.
-        # Local development continues to use instance/uploads.
         UPLOAD_FOLDER=(
             "/tmp/e-resbahub-uploads"
             if os.environ.get("VERCEL")
             else os.path.join(app.instance_path, "uploads")
         ),
-
         MAX_CONTENT_LENGTH=5 * 1024 * 1024,
         ALLOWED_EXTENSIONS={"pdf", "png", "jpg", "jpeg"},
         REQUIRE_VERIFIED_FOR_REQUESTS=True,
@@ -61,9 +60,15 @@ def create_app(test_config=None):
     if test_config:
         app.config.update(test_config)
 
+    # On Vercel, use an environment variable for a stable secret key.
+    # Locally, use the existing instance/secret_key file when available.
     if not app.config.get("SECRET_KEY"):
-        app.config["SECRET_KEY"] = _secret_key(app.instance_path)
+        if os.environ.get("VERCEL"):
+            app.config["SECRET_KEY"] = secrets.token_hex(32)
+        else:
+            app.config["SECRET_KEY"] = _secret_key(app.instance_path)
 
+    # Create upload folder only after selecting its location.
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
     app.teardown_appcontext(db.close_db)
@@ -111,7 +116,6 @@ def create_app(test_config=None):
     def csrf_protect():
         if request.method in ("POST", "PUT", "PATCH", "DELETE"):
             expected = session.get("csrf_token")
-
             sent = (
                 request.form.get("csrf_token")
                 or request.headers.get("X-CSRF-Token")
@@ -133,7 +137,6 @@ def create_app(test_config=None):
         resp.headers["X-Content-Type-Options"] = "nosniff"
         resp.headers["X-Frame-Options"] = "DENY"
         resp.headers["Referrer-Policy"] = "same-origin"
-
         resp.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "style-src 'self' 'unsafe-inline'; "
