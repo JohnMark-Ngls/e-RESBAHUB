@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, input, select, textarea %}
+{% block title %}Book appointment{% endblock %}
+{% block content %}
+<h1>Book appointment</h1>
+{% if not patient %}
+<div class="card">
+  <h2>1. Find the patient</h2>
+  <form class="filters" method="get">
+    {{ input('pq', 'Patient name or number', pq) }}
+    <button class="btn secondary" type="submit">Search</button>
+  </form>
+  {% for p in found %}
+    <p>{{ p.last_name }}, {{ p.first_name }} <span class="muted small">{{ p.patient_no }} &middot; born {{ p.birthdate|dt }}</span>
+    <a class="btn sm" href="{{ url_for('health.appointment_new', patient_id=p.id) }}">Select</a></p>
+  {% else %}{% if pq %}<p class="muted">No patient found. <a href="{{ url_for('health.patient_new') }}">Register a new patient</a>.</p>{% endif %}{% endfor %}
+</div>
+{% else %}
+<div class="card">
+  <p>Patient: <strong>{{ patient.last_name }}, {{ patient.first_name }}</strong> <span class="muted">{{ patient.patient_no }}</span>
+     <a class="small" href="{{ url_for('health.appointment_new') }}">change</a></p>
+  <form method="post">
+    {{ csrf() }}
+    <input type="hidden" name="patient_id" value="{{ patient.id }}">
+    <div class="form-grid">
+      {{ input('appointment_date', 'Date', form.appointment_date, 'date', required=True, attrs='min="' ~ today ~ '"') }}
+      {{ input('appointment_time', 'Time (optional)', form.appointment_time, 'time') }}
+      {{ select('service_type', 'Health service', service_types, form.service_type, required=True) }}
+      {{ input('notes', 'Notes', form.notes) }}
+    </div>
+    <p class="muted small">A queue number is assigned automatically for the chosen date.</p>
+    <button class="btn" type="submit">Book appointment</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, input, select %}
+{% block title %}My Profile{% endblock %}
+{% block content %}
+<h1>My profile</h1>
+<div class="card">
+  {% if resident.is_verified %}
+    <div class="notice">Your account is <strong>verified</strong>. Name, birthdate and sex are locked. To correct them, please visit the barangay hall.</div>
+  {% else %}
+    <div class="notice warn">Your account is <strong>not yet verified</strong>. You may still correct your personal details below.</div>
+  {% endif %}
+  <form method="post">
+    {{ csrf() }}
+    {% set lock = 'readonly' if not unlocked else '' %}
+    <div class="form-grid">
+      {{ input('first_name', 'First name', form.first_name, required=True, attrs=lock) }}
+      {{ input('middle_name', 'Middle name', form.middle_name, attrs=lock) }}
+      {{ input('last_name', 'Last name', form.last_name, required=True, attrs=lock) }}
+      {{ input('suffix', 'Suffix', form.suffix, attrs=lock) }}
+      {{ input('birthdate', 'Birthdate', form.birthdate, 'date', required=True, attrs=lock) }}
+      {% if unlocked %}
+        {{ select('sex', 'Sex', sex_options, form.sex, required=True) }}
+      {% else %}
+        {{ input('sex_display', 'Sex', form.sex, attrs='readonly') }}
+      {% endif %}
+      {{ select('civil_status', 'Civil status', civil_options, form.civil_status, required=True) }}
+      {{ input('contact_no', 'Mobile number', form.contact_no, 'tel', required=True) }}
+      {{ input('email', 'Email', form.email, 'email', required=True) }}
+      {{ input('purok', 'Purok / Zone', form.purok) }}
+      {{ input('address', 'Home address', form.address, required=True, cls='full') }}
+      {{ input('occupation', 'Occupation', form.occupation) }}
+    </div>
+    <button class="btn" type="submit">Save changes</button>
+  </form>
+</div>
+{% endblock %}

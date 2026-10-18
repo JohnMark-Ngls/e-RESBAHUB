@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% block title %}Welcome{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Barangay and health center services, online.</h1>
+  <p>Request barangay certificates, track your request, read announcements, and let the health center keep your records organized &mdash; all in one place.</p>
+  <div class="row mt">
+    <a class="btn secondary" href="{{ url_for('auth.register') }}">Create resident account</a>
+    <a class="btn secondary" href="{{ url_for('auth.login') }}">Log in</a>
+  </div>
+</section>
+<div class="grid cols-3">
+  <div class="card"><h3>Online barangay requests</h3><p class="muted">Clearance, Indigency, Residency and other certificates. Upload documents and track status anytime.</p></div>
+  <div class="card"><h3>Health center records</h3><p class="muted">Patient records, appointments and queue, immunization, maternal and child health, and visit monitoring.</p></div>
+  <div class="card"><h3>Announcements</h3><p class="muted">Stay updated with barangay schedules, reminders and health activities.</p></div>
+</div>
+{% if announcements %}
+<div class="card">
+  <h2>Latest announcements</h2>
+  {% for a in announcements %}
+    <p><span class="badge {{ a.category }}">{{ a.category }}</span> <strong>{{ a.title }}</strong>
+    <span class="muted small"> &middot; {{ a.created_at|dt }}</span><br>{{ a.body }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

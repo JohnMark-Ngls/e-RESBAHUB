@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import badge %}
+{% block title %}Barangay Dashboard{% endblock %}
+{% block content %}
+<h1>Barangay dashboard</h1>
+<div class="grid cols-4">
+  <div class="card stat"><div class="num">{{ counts.get('Pending', 0) }}</div><div class="lbl">Pending requests</div></div>
+  <div class="card stat"><div class="num">{{ counts.get('Processing', 0) + counts.get('Approved', 0) }}</div><div class="lbl">Ongoing (processing / approved)</div></div>
+  <div class="card stat"><div class="num">{{ counts.get('Completed', 0) }}</div><div class="lbl">Completed</div></div>
+  <div class="card stat"><div class="num">{{ counts.get('Rejected', 0) }}</div><div class="lbl">Rejected</div></div>
+</div>
+<div class="grid cols-2">
+  <div class="card">
+    <div class="row spread"><h2>Oldest pending requests</h2><a href="{{ url_for('staff.requests_list', status='Pending') }}">View all</a></div>
+    {% if pending %}<div class="table-wrap"><table>
+      <tr><th>Reference</th><th>Resident</th><th>Service</th><th>Submitted</th></tr>
+      {% for r in pending %}
+      <tr><td><a href="{{ url_for('resident.request_detail', request_id=r.id) }}">{{ r.reference_no }}</a></td>
+      <td>{{ r.first_name }} {{ r.last_name }}</td><td>{{ r.service_name }}</td><td>{{ r.created_at|dt }}</td></tr>
+      {% endfor %}
+    </table></div>{% else %}<p class="muted">No pending requests. Great job!</p>{% endif %}
+  </div>
+  <div class="card">
+    <h2>Residents</h2>
+    <p><strong>{{ total_residents }}</strong> registered residents</p>
+    <p><strong>{{ unverified }}</strong> waiting for verification
+      {% if unverified %}<a href="{{ url_for('staff.residents', verified='0') }}">Review now</a>{% endif %}</p>
+    <a class="btn secondary" href="{{ url_for('staff.announcements') }}">Post an announcement</a>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import badge, select, input %}
+{% block title %}Requests{% endblock %}
+{% block content %}
+<h1>Resident requests</h1>
+<form class="filters" method="get">
+  {{ input('q', 'Search', q, placeholder='Reference, name or service') }}
+  {{ select('status', 'Status', statuses, status, blank='All statuses') }}
+  <button class="btn secondary" type="submit">Filter</button>
+</form>
+<div class="card table-wrap">
+{% if rows %}
+<table>
+  <tr><th>Reference</th><th>Resident</th><th>Service</th><th>Status</th><th>Submitted</th><th></th></tr>
+  {% for r in rows %}
+  <tr><td>{{ r.reference_no }}</td><td>{{ r.first_name }} {{ r.last_name }}</td><td>{{ r.service_name }}</td>
+  <td>{{ badge(r.status) }}</td><td>{{ r.created_at|dt }}</td>
+  <td><a class="btn sm" href="{{ url_for('resident.request_detail', request_id=r.id) }}">Open</a></td></tr>
+  {% endfor %}
+</table>
+<p class="muted small">Showing up to the latest 200 matching requests.</p>
+{% else %}<p class="muted">No requests found.</p>{% endif %}
+</div>
+{% endblock %}

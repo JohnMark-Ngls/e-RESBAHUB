@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import input, select %}
+{% block title %}Patient visits{% endblock %}
+{% block content %}
+<h1>Patient visits</h1>
+<form class="filters" method="get">
+  {{ input('q', 'Search', q, placeholder='Patient, purpose, service') }}
+  {{ input('from', 'From', start, 'date') }}
+  {{ input('to', 'To', end, 'date') }}
+  {{ select('service', 'Service', service_types, service, blank='All services') }}
+  <button class="btn secondary" type="submit">Filter</button>
+</form>
+<div class="card table-wrap">
+{% if rows %}<table>
+  <tr><th>Date</th><th>Patient</th><th>Service</th><th>Purpose</th><th>Services provided</th></tr>
+  {% for v in rows %}
+  <tr><td>{{ v.visit_date|dt }}</td>
+  <td><a href="{{ url_for('health.patient_detail', patient_id=v.patient_id) }}">{{ v.last_name }}, {{ v.first_name }}</a> <span class="muted small">{{ v.patient_no }}</span></td>
+  <td>{{ v.service_type }}</td><td>{{ v.purpose }}</td><td>{{ v.services_provided or '-' }}</td></tr>
+  {% endfor %}
+</table><p class="muted small">Showing up to the latest 200 matching visits.</p>
+{% else %}<p class="muted">No visits found.</p>{% endif %}
+</div>
+{% endblock %}

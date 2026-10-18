@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Administrator{% endblock %}
+{% block content %}
+<h1>Administrator</h1>
+<div class="grid cols-4">
+  {% for key, label in ROLE_LABELS.items() %}
+  <div class="card stat"><div class="num">{{ by_role.get(key, 0) }}</div><div class="lbl">{{ label }} accounts</div></div>
+  {% endfor %}
+</div>
+<div class="row">
+  <a class="btn" href="{{ url_for('admin.users') }}">Manage users</a>
+  <a class="btn secondary" href="{{ url_for('admin.user_new') }}">+ New staff account</a>
+  <a class="btn secondary" href="{{ url_for('admin.services') }}">Barangay services</a>
+  <a class="btn secondary" href="{{ url_for('admin.audit_log') }}">Audit log</a>
+</div>
+<div class="card mt">
+  <h2>Recent activity</h2>
+  {% if inactive %}<p class="muted small">{{ inactive }} deactivated account(s).</p>{% endif %}
+  <div class="table-wrap"><table>
+    <tr><th>When</th><th>User</th><th>Action</th><th>Detail</th></tr>
+    {% for a in recent %}<tr><td>{{ a.created_at|dt }}</td><td>{{ a.username or '-' }}</td><td>{{ a.action }}</td><td>{{ a.detail }}</td></tr>{% endfor %}
+  </table></div>
+</div>
+{% endblock %}

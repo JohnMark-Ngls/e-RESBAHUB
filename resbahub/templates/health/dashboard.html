@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import badge %}
+{% block title %}Health Center Dashboard{% endblock %}
+{% block content %}
+<h1>Health center dashboard</h1>
+<div class="grid cols-4">
+  <div class="card stat"><div class="num">{{ appt_counts.values()|sum }}</div><div class="lbl">Appointments today</div></div>
+  <div class="card stat"><div class="num">{{ appt_counts.get('Waiting', 0) }}</div><div class="lbl">Waiting now</div></div>
+  <div class="card stat"><div class="num">{{ total_patients }}</div><div class="lbl">Registered patients</div></div>
+  <div class="card stat"><div class="num">{{ visits_month }}</div><div class="lbl">Visits this month</div></div>
+</div>
+<div class="card">
+  <div class="row spread"><h2>Today's queue</h2>
+    <span><a class="btn sm" href="{{ url_for('health.appointment_new') }}">+ Book appointment</a>
+    <a class="btn sm secondary" href="{{ url_for('health.patient_new') }}">+ New patient</a></span></div>
+  {% if queue %}<div class="table-wrap"><table>
+    <tr><th>Queue #</th><th>Patient</th><th>Service</th><th>Time</th><th>Status</th><th></th></tr>
+    {% for a in queue %}
+    <tr><td><strong>{{ a.queue_no }}</strong></td><td>{{ a.last_name }}, {{ a.first_name }} <span class="muted small">{{ a.patient_no }}</span></td>
+    <td>{{ a.service_type }}</td><td>{{ a.appointment_time or '-' }}</td><td>{{ badge(a.status) }}</td>
+    <td><a class="btn sm" href="{{ url_for('health.visit_new', patient_id=a.patient_id, appointment_id=a.id) }}">Record visit</a></td></tr>
+    {% endfor %}
+  </table></div>{% else %}<p class="muted">Nobody in the queue right now.</p>{% endif %}
+</div>
+{% endblock %}

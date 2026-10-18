@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, textarea %}
+{% block title %}New Request{% endblock %}
+{% block content %}
+<h1>New barangay request</h1>
+<div class="card">
+  <form method="post" enctype="multipart/form-data">
+    {{ csrf() }}
+    <div class="field">
+      <label for="service_id">Service <span class="req">*</span></label>
+      <select id="service_id" name="service_id" required>
+        <option value="">Select a service...</option>
+        {% for s in services %}
+        <option value="{{ s.id }}" {% if form.service_id == s.id|string %}selected{% endif %}>
+          {{ s.name }}{% if s.fee %} - PHP {{ '%.2f'|format(s.fee) }}{% endif %}{% if s.requires_document %} (needs document){% endif %}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <ul class="small muted">
+      {% for s in services %}<li><strong>{{ s.name }}:</strong> {{ s.description }}</li>{% endfor %}
+    </ul>
+    {{ textarea('purpose', 'Purpose of request', form.purpose, required=True) }}
+    <div class="field">
+      <label for="documents">Supporting documents (PDF, PNG or JPG &middot; up to {{ max_files }} files &middot; 5 MB total)</label>
+      <input id="documents" name="documents" type="file" multiple accept=".pdf,.png,.jpg,.jpeg" data-max-files="{{ max_files }}">
+      <div class="muted small">Examples: valid ID, proof of residency. Required for some services.</div>
+    </div>
+    <button class="btn" type="submit">Submit request</button>
+    <a class="btn secondary" href="{{ url_for('resident.my_requests') }}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

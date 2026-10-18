@@ -1,0 +1,31 @@
+{% macro csrf() %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endmacro %}
+
+{% macro badge(status) %}<span class="badge {{ status.split(' ')[0] }}">{{ status }}</span>{% endmacro %}
+
+{% macro input(name, label, value='', type='text', required=False, placeholder='', attrs='', cls='') %}
+<div class="field {{ cls }}">
+  <label for="{{ name }}">{{ label }}{% if required %} <span class="req">*</span>{% endif %}</label>
+  <input id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ value if value is not none else '' }}"
+         placeholder="{{ placeholder }}" {% if required %}required{% endif %} {{ attrs|safe }}>
+</div>
+{% endmacro %}
+
+{% macro textarea(name, label, value='', required=False, cls='', rows=3) %}
+<div class="field {{ cls }}">
+  <label for="{{ name }}">{{ label }}{% if required %} <span class="req">*</span>{% endif %}</label>
+  <textarea id="{{ name }}" name="{{ name }}" rows="{{ rows }}" {% if required %}required{% endif %}>{{ value if value is not none else '' }}</textarea>
+</div>
+{% endmacro %}
+
+{% macro select(name, label, options, selected='', required=False, blank=none, cls='', attrs='') %}
+<div class="field {{ cls }}">
+  <label for="{{ name }}">{{ label }}{% if required %} <span class="req">*</span>{% endif %}</label>
+  <select id="{{ name }}" name="{{ name }}" {% if required %}required{% endif %} {{ attrs|safe }}>
+    {% if blank is not none %}<option value="">{{ blank }}</option>{% endif %}
+    {% for o in options %}
+      {% if o is string %}{% set v = o %}{% set l = o %}{% else %}{% set v = o[0] %}{% set l = o[1] %}{% endif %}
+      <option value="{{ v }}" {% if (v|string) == (selected|string) %}selected{% endif %}>{{ l }}</option>
+    {% endfor %}
+  </select>
+</div>
+{% endmacro %}

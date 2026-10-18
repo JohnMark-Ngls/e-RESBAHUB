@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, input, select, textarea %}
+{% block title %}{{ 'Edit patient' if editing else 'New patient' }}{% endblock %}
+{% block content %}
+<h1>{{ 'Edit patient ' ~ p.patient_no if editing else 'New patient' }}</h1>
+{% if not editing %}
+<div class="card">
+  <h2>Start from a registered resident (optional)</h2>
+  <form class="filters" method="get">
+    {{ input('rq', 'Find verified resident', rq, placeholder='First or last name') }}
+    <button class="btn secondary" type="submit">Find</button>
+  </form>
+  {% for r in found %}
+    <p>{{ r.last_name }}, {{ r.first_name }} <span class="muted small">born {{ r.birthdate|dt }}</span>
+    <a class="btn sm" href="{{ url_for('health.patient_new', resident_id=r.id) }}">Use this resident</a></p>
+  {% else %}{% if rq %}<p class="muted">No verified resident found.</p>{% endif %}{% endfor %}
+</div>
+{% endif %}
+<div class="card">
+  <form method="post">
+    {{ csrf() }}
+    {% if resident_id %}<input type="hidden" name="resident_id" value="{{ resident_id }}"><div class="notice">Linked to a registered resident account.</div>{% endif %}
+    <div class="form-grid">
+      {{ input('first_name', 'First name', form.first_name, required=True) }}
+      {{ input('middle_name', 'Middle name', form.middle_name) }}
+      {{ input('last_name', 'Last name', form.last_name, required=True) }}
+      {{ input('birthdate', 'Birthdate', form.birthdate, 'date', required=True, attrs='max="' ~ today ~ '"') }}
+      {{ select('sex', 'Sex', sex_options, form.sex, required=True, blank='Select...') }}
+      {{ input('contact_no', 'Mobile number', form.contact_no, 'tel', placeholder='09123456789') }}
+      {{ input('address', 'Address', form.address, cls='full') }}
+      {{ input('guardian_name', 'Guardian / parent (for children)', form.guardian_name) }}
+      {{ select('blood_type', 'Blood type', blood_types, form.blood_type, blank='Unknown') }}
+      {{ input('allergies', 'Known allergies', form.allergies, cls='full') }}
+      {{ textarea('notes', 'Notes', form.notes, cls='full') }}
+    </div>
+    <button class="btn" type="submit">Save patient</button>
+    <a class="btn secondary" href="{{ url_for('health.patient_detail', patient_id=p.id) if editing else url_for('health.patients') }}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

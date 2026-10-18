@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import input, badge %}
+{% block title %}Search{% endblock %}
+{% block content %}
+<h1>Search records</h1>
+<form class="filters" method="get">
+  {{ input('q', 'Search', q, placeholder='Name, reference no., patient no., purpose...') }}
+  <button class="btn" type="submit">Search</button>
+</form>
+{% if not searched %}<p class="muted">Type at least 2 characters.</p>{% endif %}
+
+{% if results.residents is defined %}<div class="card"><h2>Residents ({{ results.residents|length }})</h2>
+  {% for r in results.residents %}<p><a href="{{ url_for('staff.resident_edit', resident_id=r.id) }}">{{ r.last_name }}, {{ r.first_name }}</a> &middot; {{ r.contact_no }}
+    {% if r.is_verified %}<span class="badge ok">Verified</span>{% else %}<span class="badge Pending">Not verified</span>{% endif %}</p>
+  {% else %}<p class="muted">No matches.</p>{% endfor %}</div>{% endif %}
+{% if results.requests is defined %}<div class="card"><h2>Requests ({{ results.requests|length }})</h2>
+  {% for r in results.requests %}<p><a href="{{ url_for('resident.request_detail', request_id=r.id) }}">{{ r.reference_no }}</a> &middot; {{ r.first_name }} {{ r.last_name }} &middot; {{ r.service_name }} {{ badge(r.status) }}</p>
+  {% else %}<p class="muted">No matches.</p>{% endfor %}</div>{% endif %}
+{% if results.patients is defined %}<div class="card"><h2>Patients ({{ results.patients|length }})</h2>
+  {% for p in results.patients %}<p><a href="{{ url_for('health.patient_detail', patient_id=p.id) }}">{{ p.last_name }}, {{ p.first_name }}</a> <span class="muted small">{{ p.patient_no }}</span></p>
+  {% else %}<p class="muted">No matches.</p>{% endfor %}</div>{% endif %}
+{% if results.visits is defined %}<div class="card"><h2>Visits ({{ results.visits|length }})</h2>
+  {% for v in results.visits %}<p>{{ v.visit_date|dt }} &middot; <a href="{{ url_for('health.patient_detail', patient_id=v.patient_id) }}">{{ v.last_name }}, {{ v.first_name }}</a> &middot; {{ v.service_type }} &middot; {{ v.purpose }}</p>
+  {% else %}<p class="muted">No matches.</p>{% endfor %}</div>{% endif %}
+{% if results.appointments is defined %}<div class="card"><h2>Appointments ({{ results.appointments|length }})</h2>
+  {% for a in results.appointments %}<p>{{ a.appointment_date|dt }} &middot; Queue #{{ a.queue_no }} &middot; {{ a.last_name }}, {{ a.first_name }} &middot; {{ a.service_type }} {{ badge(a.status) }}</p>
+  {% else %}<p class="muted">No matches.</p>{% endfor %}</div>{% endif %}
+{% endblock %}

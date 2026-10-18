@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, input, select %}
+{% block title %}{{ 'Edit user' if editing else 'New staff account' }}{% endblock %}
+{% block content %}
+<h1>{{ 'Edit ' ~ u.username if editing else 'New staff account' }}</h1>
+<div class="card">
+  <form method="post">
+    {{ csrf() }}
+    <div class="form-grid">
+      {% if not editing %}{{ input('username', 'Username', form.username, required=True) }}{% endif %}
+      {{ input('full_name', 'Full name', form.full_name, required=True) }}
+      {{ input('email', 'Email', form.email, 'email', required=True) }}
+      {% if editing and u.role == 'resident' %}
+        {{ input('role_display', 'Role', roles['resident'], attrs='readonly') }}
+      {% else %}
+        {{ select('role', 'Role', choice_pairs, form.role, required=True, attrs=('disabled' if is_self else '')) }}
+      {% endif %}
+      {{ input('password', 'New password' if editing else 'Password', '', 'password', required=not editing, placeholder='Leave blank to keep current' if editing else 'At least 8 characters, letters and numbers') }}
+    </div>
+    {% if editing %}
+    <label class="checkbox"><input type="checkbox" name="is_active" value="1" {% if form.is_active %}checked{% endif %} {% if is_self %}onclick="return false"{% endif %}> <span>Account is active (untick to deactivate)</span></label>
+    {% endif %}
+    <p class="mt"><button class="btn" type="submit">Save</button> <a class="btn secondary" href="{{ url_for('admin.users') }}">Cancel</a></p>
+  </form>
+</div>
+{% endblock %}

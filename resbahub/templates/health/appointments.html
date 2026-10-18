@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, badge, select, input %}
+{% block title %}Appointments & Queue{% endblock %}
+{% block content %}
+<div class="row spread"><h1>Appointments &amp; queue</h1><a class="btn" href="{{ url_for('health.appointment_new') }}">+ Book appointment</a></div>
+<form class="filters" method="get">
+  {{ input('date', 'Date', day, 'date') }}
+  {{ select('status', 'Status', statuses, status, blank='All statuses') }}
+  <button class="btn secondary" type="submit">Show</button>
+</form>
+<div class="card table-wrap">
+{% if rows %}<table>
+  <tr><th>Queue #</th><th>Patient</th><th>Service</th><th>Time</th><th>Status</th><th>Actions</th></tr>
+  {% for a in rows %}
+  <tr><td><strong>{{ a.queue_no }}</strong></td>
+  <td><a href="{{ url_for('health.patient_detail', patient_id=a.patient_id) }}">{{ a.last_name }}, {{ a.first_name }}</a> <span class="muted small">{{ a.patient_no }}</span></td>
+  <td>{{ a.service_type }}</td><td>{{ a.appointment_time or '-' }}</td><td>{{ badge(a.status) }}</td>
+  <td>
+    {% if transitions[a.status] %}
+    <form method="post" action="{{ url_for('health.appointment_status', appt_id=a.id) }}" class="row">
+      {{ csrf() }}
+      <select name="status" style="width:auto">{% for s in transitions[a.status] %}<option>{{ s }}</option>{% endfor %}</select>
+      <button class="btn sm" type="submit">Set</button>
+    </form>
+    {% endif %}
+    {% if a.status in ('Scheduled', 'Waiting', 'In Consultation') %}
+      <a class="btn sm secondary" href="{{ url_for('health.visit_new', patient_id=a.patient_id, appointment_id=a.id) }}">Record visit</a>
+    {% endif %}
+  </td></tr>
+  {% endfor %}
+</table>{% else %}<p class="muted">No appointments for this date.</p>{% endif %}
+</div>
+{% endblock %}

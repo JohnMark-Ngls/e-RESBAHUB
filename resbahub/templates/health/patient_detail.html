@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import badge %}
+{% block title %}{{ p.last_name }}, {{ p.first_name }}{% endblock %}
+{% block content %}
+<div class="row spread">
+  <h1>{{ p.first_name }} {{ p.middle_name or '' }} {{ p.last_name }} <span class="muted small">{{ p.patient_no }}</span></h1>
+  <span class="noprint">
+    <a class="btn" href="{{ url_for('health.visit_new', patient_id=p.id) }}">Record visit</a>
+    <a class="btn secondary" href="{{ url_for('health.appointment_new', patient_id=p.id) }}">Book appointment</a>
+    <a class="btn secondary" href="{{ url_for('health.patient_edit', patient_id=p.id) }}">Edit</a>
+  </span>
+</div>
+<div class="card">
+  <dl class="kv">
+    <dt>Age / Sex</dt><dd>{{ p.birthdate|age }} years old &middot; {{ p.sex }} &middot; born {{ p.birthdate|dt }}</dd>
+    <dt>Mobile</dt><dd>{{ p.contact_no or '-' }}</dd>
+    <dt>Address</dt><dd>{{ p.address or '-' }}</dd>
+    <dt>Guardian</dt><dd>{{ p.guardian_name or '-' }}</dd>
+    <dt>Blood type</dt><dd>{{ p.blood_type or 'Unknown' }}</dd>
+    <dt>Allergies</dt><dd>{{ p.allergies or '-' }}</dd>
+    <dt>Notes</dt><dd>{{ p.notes or '-' }}</dd>
+  </dl>
+</div>
+<div class="card">
+  <h2>Visit history</h2>
+  {% if visits %}<div class="table-wrap"><table>
+    <tr><th>Date</th><th>Service</th><th>Purpose</th><th>Services provided</th><th>Vitals</th><th>Follow-up</th></tr>
+    {% for v in visits %}
+    <tr><td>{{ v.visit_date|dt }}</td><td>{{ v.service_type }}</td><td>{{ v.purpose }}</td>
+    <td>{{ v.services_provided or '-' }}{% if v.findings %}<br><span class="muted small">Findings: {{ v.findings }}</span>{% endif %}</td>
+    <td class="small">{% if v.blood_pressure %}BP {{ v.blood_pressure }}<br>{% endif %}{% if v.temperature %}{{ v.temperature }} &deg;C<br>{% endif %}{% if v.weight_kg %}{{ v.weight_kg }} kg{% endif %}</td>
+    <td>{{ v.follow_up_date|dt if v.follow_up_date else '-' }}</td></tr>
+    {% endfor %}
+  </table></div>{% else %}<p class="muted">No visits recorded yet.</p>{% endif %}
+</div>
+<div class="card">
+  <h2>Recent appointments</h2>
+  {% if appts %}<div class="table-wrap"><table>
+    <tr><th>Date</th><th>Queue #</th><th>Service</th><th>Status</th></tr>
+    {% for a in appts %}<tr><td>{{ a.appointment_date|dt }}</td><td>{{ a.queue_no }}</td><td>{{ a.service_type }}</td><td>{{ badge(a.status) }}</td></tr>{% endfor %}
+  </table></div>{% else %}<p class="muted">No appointments.</p>{% endif %}
+</div>
+{% endblock %}

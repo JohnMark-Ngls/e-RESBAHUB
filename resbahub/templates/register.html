@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, input, select %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="card auth-box wide">
+  <h1>Resident registration</h1>
+  <p class="muted">Fill in your details. Barangay personnel will verify your account before you can submit requests.</p>
+  <form method="post">
+    {{ csrf() }}
+    <h3>Personal information</h3>
+    <div class="form-grid">
+      {{ input('first_name', 'First name', form.first_name, required=True) }}
+      {{ input('middle_name', 'Middle name', form.middle_name) }}
+      {{ input('last_name', 'Last name', form.last_name, required=True) }}
+      {{ input('suffix', 'Suffix (Jr., Sr., III)', form.suffix) }}
+      {{ input('birthdate', 'Birthdate', form.birthdate, 'date', required=True, attrs='max="' ~ today ~ '"') }}
+      {{ select('sex', 'Sex', sex_options, form.sex, required=True, blank='Select...') }}
+      {{ select('civil_status', 'Civil status', civil_options, form.civil_status, required=True, blank='Select...') }}
+      {{ input('contact_no', 'Mobile number', form.contact_no, 'tel', required=True, placeholder='09123456789') }}
+      {{ input('address', 'Home address', form.address, required=True, cls='full') }}
+      {{ input('purok', 'Purok / Zone', form.purok) }}
+      {{ input('occupation', 'Occupation', form.occupation) }}
+    </div>
+    <h3>Account</h3>
+    <div class="form-grid">
+      {{ input('username', 'Username', form.username, required=True, placeholder='4-30 letters, numbers, . or _') }}
+      {{ input('email', 'Email', form.email, 'email', required=True) }}
+      {{ input('password', 'Password', '', 'password', required=True, placeholder='At least 8 characters, letters and numbers') }}
+      {{ input('confirm', 'Confirm password', '', 'password', required=True) }}
+    </div>
+    <label class="checkbox"><input type="checkbox" name="consent" value="1" required>
+      <span class="small">I agree that the barangay and health center may collect and process my personal information for service delivery, in line with the Data Privacy Act of 2012 (RA 10173).</span></label>
+    <p class="mt"><button class="btn" type="submit">Register</button> <a href="{{ url_for('auth.login') }}">I already have an account</a></p>
+  </form>
+</div>
+{% endblock %}

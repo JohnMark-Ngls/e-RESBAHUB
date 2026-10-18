@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, input %}
+{% block title %}Barangay services{% endblock %}
+{% block content %}
+<h1>Barangay services</h1>
+<div class="card">
+  <h2>Add a service</h2>
+  <form method="post">
+    {{ csrf() }}
+    <div class="form-grid">
+      {{ input('name', 'Service name', '', required=True, attrs='maxlength="80"') }}
+      {{ input('fee', 'Fee (PHP)', '0', 'number', attrs='step="0.01" min="0"') }}
+      {{ input('description', 'Description', '', cls='full', attrs='maxlength="300"') }}
+    </div>
+    <label class="checkbox"><input type="checkbox" name="requires_document" value="1"> <span>Residents must upload a supporting document</span></label>
+    <p class="mt"><button class="btn" type="submit">Add service</button></p>
+  </form>
+</div>
+<div class="card table-wrap"><table>
+  <tr><th>Service</th><th>Fee</th><th>Document</th><th>Status</th><th></th></tr>
+  {% for s in rows %}
+  <tr><td><strong>{{ s.name }}</strong><br><span class="muted small">{{ s.description }}</span></td>
+  <td>PHP {{ '%.2f'|format(s.fee) }}</td><td>{{ 'Required' if s.requires_document else 'Optional' }}</td>
+  <td>{% if s.is_active %}<span class="badge ok">Active</span>{% else %}<span class="badge Rejected">Disabled</span>{% endif %}</td>
+  <td><form method="post" action="{{ url_for('admin.service_toggle', service_id=s.id) }}">{{ csrf() }}
+    <button class="btn sm secondary" type="submit">{{ 'Disable' if s.is_active else 'Enable' }}</button></form></td></tr>
+  {% endfor %}
+</table></div>
+{% endblock %}

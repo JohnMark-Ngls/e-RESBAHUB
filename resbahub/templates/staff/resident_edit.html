@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, input, select %}
+{% block title %}Resident record{% endblock %}
+{% block content %}
+<div class="row spread"><h1>Resident record</h1><a class="btn secondary" href="{{ url_for('staff.residents') }}">&larr; Back</a></div>
+<div class="card">
+  <p class="muted">Username: <strong>{{ res.username }}</strong> &middot; Email: {{ res.email }} &middot; Registered {{ res.created_at|dt }} &middot; {{ total_requests }} request(s)</p>
+  <form method="post">
+    {{ csrf() }}
+    <div class="form-grid">
+      {{ input('first_name', 'First name', form.first_name, required=True) }}
+      {{ input('middle_name', 'Middle name', form.middle_name) }}
+      {{ input('last_name', 'Last name', form.last_name, required=True) }}
+      {{ input('suffix', 'Suffix', form.suffix) }}
+      {{ input('birthdate', 'Birthdate', form.birthdate, 'date', required=True) }}
+      {{ select('sex', 'Sex', sex_options, form.sex, required=True) }}
+      {{ select('civil_status', 'Civil status', civil_options, form.civil_status, required=True) }}
+      {{ input('contact_no', 'Mobile number', form.contact_no, 'tel', required=True) }}
+      {{ input('address', 'Home address', form.address, required=True, cls='full') }}
+      {{ input('purok', 'Purok / Zone', form.purok) }}
+      {{ input('occupation', 'Occupation', form.occupation) }}
+    </div>
+    <label class="checkbox"><input type="checkbox" name="is_verified" value="1" {% if res.is_verified %}checked{% endif %}>
+      <span><strong>Verified resident</strong> &mdash; tick after checking the resident's identity and address.
+      {% if res.verified_at %}<span class="muted small">(verified {{ res.verified_at|dt }})</span>{% endif %}</span></label>
+    <p class="mt"><button class="btn" type="submit">Save record</button></p>
+  </form>
+</div>
+{% endblock %}

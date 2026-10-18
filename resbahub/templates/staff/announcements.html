@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, input, textarea, select %}
+{% block title %}Manage announcements{% endblock %}
+{% block content %}
+<h1>Announcements</h1>
+<div class="card">
+  <h2>Publish new announcement</h2>
+  <form method="post">
+    {{ csrf() }}
+    <div class="form-grid">
+      {{ input('title', 'Title', form.title, required=True, attrs='maxlength="120"') }}
+      {{ select('category', 'Category', categories, form.category, required=True) }}
+      {{ textarea('body', 'Message', form.body, required=True, cls='full', rows=4) }}
+    </div>
+    <button class="btn" type="submit">Publish</button>
+  </form>
+</div>
+{% for a in rows %}
+<div class="card">
+  <div class="row spread">
+    <span><span class="badge {{ a.category }}">{{ a.category }}</span> <strong>{{ a.title }}</strong></span>
+    <form method="post" action="{{ url_for('staff.delete_announcement', ann_id=a.id) }}" data-confirm="Delete this announcement?">
+      {{ csrf() }}<button class="btn danger sm" type="submit">Delete</button>
+    </form>
+  </div>
+  <p style="white-space:pre-line">{{ a.body }}</p>
+  <div class="muted small">{{ a.created_at|dt }}{% if a.author %} &middot; {{ a.author }}{% endif %}</div>
+</div>
+{% endfor %}
+{% endblock %}

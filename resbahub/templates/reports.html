@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import input, badge %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="row spread"><h1>Reports &amp; monitoring</h1><button class="btn secondary noprint" onclick="window.print()">Print</button></div>
+<form class="filters" method="get">
+  {{ input('from', 'From', start, 'date') }}
+  {{ input('to', 'To', end, 'date') }}
+  <button class="btn secondary" type="submit">Apply</button>
+</form>
+<p class="muted">Period: <strong>{{ start|dt }}</strong> to <strong>{{ end|dt }}</strong></p>
+
+{% if can_barangay %}
+<h2>Barangay services</h2>
+<div class="grid cols-4">
+  <div class="card stat"><div class="num">{{ d.req_total }}</div><div class="lbl">Requests submitted</div></div>
+  <div class="card stat"><div class="num">{{ d.new_residents }}</div><div class="lbl">New residents</div></div>
+  <div class="card stat"><div class="num">{{ d.verified }}</div><div class="lbl">Verified residents (all time)</div></div>
+  <div class="card stat"><div class="num">{{ d.unverified }}</div><div class="lbl">Awaiting verification</div></div>
+</div>
+<div class="grid cols-2">
+  <div class="card"><h3>Requests by status</h3>
+    <table>{% for r in d.req_status %}<tr><td>{{ badge(r.status) }}</td><td class="right">{{ r.c }}</td></tr>{% else %}<tr><td class="muted">No data</td></tr>{% endfor %}</table></div>
+  <div class="card"><h3>Requests by service</h3>
+    <table>{% for r in d.req_service %}<tr><td>{{ r.name }}</td><td class="right">{{ r.c }}</td></tr>{% else %}<tr><td class="muted">No data</td></tr>{% endfor %}</table></div>
+</div>
+<p class="noprint"><a class="btn sm" href="{{ url_for('reports.export_csv', kind='requests', **{'from': start, 'to': end}) }}">Download requests (CSV)</a></p>
+{% endif %}
+
+{% if can_health %}
+<h2>Health center</h2>
+<div class="grid cols-4">
+  <div class="card stat"><div class="num">{{ d.visit_total }}</div><div class="lbl">Patient visits</div></div>
+  <div class="card stat"><div class="num">{{ d.unique_patients }}</div><div class="lbl">Unique patients served</div></div>
+  <div class="card stat"><div class="num">{{ d.new_patients }}</div><div class="lbl">New patient records</div></div>
+  <div class="card stat"><div class="num">{{ d.appt_status|sum(attribute='c') }}</div><div class="lbl">Appointments</div></div>
+</div>
+<div class="grid cols-2">
+  <div class="card"><h3>Visits by health service</h3>
+    <table>{% for r in d.visit_service %}<tr><td>{{ r.service_type }}</td><td class="right">{{ r.c }}</td></tr>{% else %}<tr><td class="muted">No data</td></tr>{% endfor %}</table></div>
+  <div class="card"><h3>Appointments by status</h3>
+    <table>{% for r in d.appt_status %}<tr><td>{{ badge(r.status) }}</td><td class="right">{{ r.c }}</td></tr>{% else %}<tr><td class="muted">No data</td></tr>{% endfor %}</table></div>
+</div>
+<p class="noprint">
+  <a class="btn sm" href="{{ url_for('reports.export_csv', kind='visits', **{'from': start, 'to': end}) }}">Download visits (CSV)</a>
+  <a class="btn sm" href="{{ url_for('reports.export_csv', kind='appointments', **{'from': start, 'to': end}) }}">Download appointments (CSV)</a>
+</p>
+{% endif %}
+
+{% if d.activity is defined %}
+<h2>Operational activity</h2>
+<div class="card"><table>{% for r in d.activity %}<tr><td>{{ r.action }}</td><td class="right">{{ r.c }}</td></tr>{% else %}<tr><td class="muted">No activity</td></tr>{% endfor %}</table></div>
+{% endif %}
+{% endblock %}

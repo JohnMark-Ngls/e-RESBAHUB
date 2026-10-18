@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, input, select, textarea %}
+{% block title %}Record visit{% endblock %}
+{% block content %}
+<h1>Record patient visit</h1>
+<div class="card">
+  <p>Patient: <strong>{{ patient.last_name }}, {{ patient.first_name }}</strong> <span class="muted">{{ patient.patient_no }}</span>
+  {% if appt %}&middot; Queue #{{ appt.queue_no }} on {{ appt.appointment_date|dt }}{% endif %}</p>
+  <form method="post">
+    {{ csrf() }}
+    <input type="hidden" name="patient_id" value="{{ patient.id }}">
+    {% if appt %}<input type="hidden" name="appointment_id" value="{{ appt.id }}">{% endif %}
+    <div class="form-grid">
+      {{ input('visit_date', 'Date of visit', form.visit_date, 'date', required=True, attrs='max="' ~ today ~ '"') }}
+      {{ select('service_type', 'Health service', service_types, form.service_type, required=True) }}
+      {{ input('purpose', 'Purpose of visit', form.purpose, required=True, cls='full', attrs='maxlength="300"') }}
+      {{ textarea('services_provided', 'Services provided (e.g. vaccine given, medicines, check-up done)', form.services_provided, cls='full') }}
+      {{ textarea('findings', 'Findings / remarks', form.findings, cls='full') }}
+      {{ input('blood_pressure', 'Blood pressure', form.blood_pressure, placeholder='120/80') }}
+      {{ input('temperature', 'Temperature (C)', form.temperature, 'number', attrs='step="0.1" min="30" max="45"') }}
+      {{ input('weight_kg', 'Weight (kg)', form.weight_kg, 'number', attrs='step="0.1" min="0.3" max="400"') }}
+      {{ input('follow_up_date', 'Follow-up date', form.follow_up_date, 'date') }}
+    </div>
+    <button class="btn" type="submit">Save visit</button>
+    <a class="btn secondary" href="{{ url_for('health.patient_detail', patient_id=patient.id) }}">Cancel</a>
+  </form>
+</div>
+{% endblock %}

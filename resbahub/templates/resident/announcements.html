@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import select %}
+{% block title %}Announcements{% endblock %}
+{% block content %}
+<h1>Barangay announcements</h1>
+<form class="filters" method="get">
+  {{ select('category', 'Category', categories, category, blank='All categories') }}
+  <button class="btn secondary" type="submit">Filter</button>
+</form>
+{% for a in rows %}
+<div class="card">
+  <span class="badge {{ a.category }}">{{ a.category }}</span>
+  <h2>{{ a.title }}</h2>
+  <p style="white-space:pre-line">{{ a.body }}</p>
+  <div class="muted small">{{ a.created_at|dt }}{% if a.author %} &middot; Posted by {{ a.author }}{% endif %}</div>
+</div>
+{% else %}<div class="card muted">No announcements yet.</div>{% endfor %}
+{% endblock %}
