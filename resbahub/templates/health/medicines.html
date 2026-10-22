@@ -1,0 +1,143 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Medicine Inventory{% endblock %}
+
+{% block content %}
+<div class="medicine-page">
+
+  <div class="medicine-heading">
+    <h1>Medicine Inventory</h1>
+    <p>
+      Add free medicines and keep their stock information updated
+      for residents of the barangay.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Add Medicine</h2>
+
+    <form method="post" action="{{ url_for('health.medicines') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-grid">
+        <div>
+          <label for="condition_name">Medical Condition</label>
+          <input
+            id="condition_name"
+            name="condition_name"
+            type="text"
+            placeholder="e.g. Hypertension"
+            required
+          >
+        </div>
+
+        <div>
+          <label for="medicine_name">Medicine Name</label>
+          <input
+            id="medicine_name"
+            name="medicine_name"
+            type="text"
+            placeholder="Enter medicine name"
+            required
+          >
+        </div>
+
+        <div>
+          <label for="strength">Strength</label>
+          <input
+            id="strength"
+            name="strength"
+            type="text"
+            placeholder="e.g. 5 mg"
+          >
+        </div>
+
+        <div>
+          <label for="form">Medicine Form</label>
+          <select id="form" name="form">
+            <option value="">Select form</option>
+            <option value="Tablet">Tablet</option>
+            <option value="Capsule">Capsule</option>
+            <option value="Syrup">Syrup</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="stock_quantity">Stock Quantity</label>
+          <input
+            id="stock_quantity"
+            name="stock_quantity"
+            type="number"
+            min="0"
+            value="0"
+            required
+          >
+        </div>
+
+        <div>
+          <label for="description">Description (optional)</label>
+          <input
+            id="description"
+            name="description"
+            type="text"
+            placeholder="Additional information"
+          >
+        </div>
+      </div>
+
+      <button class="btn" type="submit">Add Medicine</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Medicine Records</h2>
+
+    {% if medicines %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Condition</th>
+              <th>Medicine</th>
+              <th>Strength</th>
+              <th>Form</th>
+              <th>Stock</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for medicine in medicines %}
+              <tr>
+                <td>{{ medicine.condition_name }}</td>
+                <td>{{ medicine.medicine_name }}</td>
+                <td>{{ medicine.strength or '—' }}</td>
+                <td>{{ medicine.form or '—' }}</td>
+                <td>{{ medicine.stock_quantity }}</td>
+                <td>
+                  {% if medicine.stock_quantity > 0
+                        and medicine.is_active %}
+                    <span class="medicine-status available">
+                      Available
+                    </span>
+                  {% else %}
+                    <span class="medicine-status unavailable">
+                      Out of stock
+                    </span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted">
+        No medicine records have been added yet.
+      </p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

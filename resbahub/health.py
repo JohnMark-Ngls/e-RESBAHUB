@@ -914,3 +914,124 @@ def visit_new():
         form=form,
         service_types=SERVICE_TYPES,
     )
+
+
+# Medicine inventory
+
+@bp.route("/medicines", methods=["GET", "POST"])
+@roles_required(*HEALTH)
+def medicines():
+    if request.method == "POST":
+        condition_name = (
+            request.form.get("condition_name") or ""
+        ).strip()
+        medicine_name = (
+            request.form.get("medicine_name") or ""
+        ).strip()
+        strength = (
+            request.form.get("strength") or ""
+        ).strip()
+        form = (
+            request.form.get("form") or ""
+        ).strip()
+        description = (
+            request.form.get("description") or ""
+        ).strip()
+
+        try:
+            stock_quantity = int(
+                request.form.get("stock_quantity", "")
+            )
+        except (ValueError, TypeError):
+            stock_quantity = -1
+
+        if not condition_name or not medicine_name:
+            flash(
+                "Please enter the medical condition and medicine name.",
+                "danger",
+            )
+        elif stock_quantity < 0:
+            flash(
+                "Please enter a valid stock quantity of zero or more.",
+                "danger",
+            )
+       
+        else:
+            existing = db.query(
+                """
+                SELECT id, stock_quantity
+                FROM medicines
+                WHERE LOWER(TRIM(condition_name)) = LOWER(TRIM(?))
+                  AND LOWER(TRIM(medicine_name)) = LOWER(TRIM(?))
+                  AND COALESCE(LOWER(TRIM(strength)), '') =
+                      COALESCE(LOWER(TRIM(?)), '')
+                  AND COALESCE(LOWER(TRIM(form)), '') =
+                      COALESCE(LOWER(TRIM(?)), '')
+                ORDER BY id
+                LIMIT 1
+                """,
+                (
+                    condition_name,
+                    medicine_name,
+                    strength or None,
+                    form or None,
+                ),
+                one=True,
+            )
+
+            if existing:
+                db.execute(
+                    """
+                    UPDATE medicines
+                    SET stock_quantity = stock_quantity + ?,
+                        is_active = 1,
+                        description = ?,
+                        updated_at = CURRENT_TIMESTAMP
+                    WHERE id = ?
+                    """,
+                    (
+                        stock_quantity,
+                        description or None,
+                        existing["id"],
+                    ),
+                )
+
+                flash(
+                    "Existing medicine updated and stock added successfully.",
+                    "success",
+                )
+            else:
+                db.execute(
+                    """
+                    INSERT INTO medicines
+                        (condition_name, medicine_name, strength,
+                         form, stock_quantity, description, is_active)
+                    VALUES (?, ?, ?, ?, ?, ?, 1)
+                    """,
+                    (
+                        condition_name,
+                        medicine_name,
+                        strength or None,
+                        form or None,
+                        stock_quantity,
+                        description or None,
+                    ),
+                )
+
+                flash("New medicine added successfully.", "success")
+
+            return redirect(url_for("health.medicines"))
+
+    medicine_list = db.query(
+        """
+        SELECT id, condition_name, medicine_name, strength,
+               form, stock_quantity, description, is_active
+        FROM medicines
+        ORDER BY condition_name, medicine_name
+        """
+    )
+
+    return render_template(
+        "health/medicines.html",
+        medicines=medicine_list,
+    )

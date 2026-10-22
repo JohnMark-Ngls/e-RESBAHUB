@@ -22,6 +22,7 @@
           <a href="{{ url_for('resident.my_requests') }}">My Requests</a>
           <a href="{{ url_for('resident.announcements') }}">Announcements</a>
           <a href="{{ url_for('resident.notifications') }}">Notifications{% if unread_count %}<span class="badge-count">{{ unread_count }}</span>{% endif %}</a>
+          <a href="{{ url_for('resident.medicine') }}">Medicine</a>
           <a href="{{ url_for('resident.profile') }}">My Profile</a>
         {% endif %}
         {% if role in ('barangay_staff', 'admin') %}
@@ -32,6 +33,7 @@
         {% endif %}
         {% if role in ('health_staff', 'admin') %}
           <a href="{{ url_for('health.dashboard') }}">Health Center</a>
+          <a href="{{ url_for('health.medicines') }}">Medicine</a>
           <a href="{{ url_for('health.patients') }}">Patients</a>
           <a href="{{ url_for('health.appointments') }}">Appointments</a>
           <a href="{{ url_for('health.visits') }}">Visits</a>
