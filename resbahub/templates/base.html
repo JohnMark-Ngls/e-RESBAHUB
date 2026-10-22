@@ -6,7 +6,7 @@
   <title>{% block title %}e-RESBAHUB{% endblock %} | e-RESBAHUB</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
 <header class="topbar">
   <div class="inner">
     <a class="brand" href="{{ url_for('auth.home') }}">e-RESBAHUB<small>Resident &amp; Health Services System</small></a>
