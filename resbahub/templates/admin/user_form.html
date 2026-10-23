@@ -13,7 +13,12 @@
       {% if editing and u.role == 'resident' %}
         {{ input('role_display', 'Role', roles['resident'], attrs='readonly') }}
       {% else %}
-        {{ select('role', 'Role', choice_pairs, form.role, required=True, attrs=('disabled' if is_self else '')) }}
+        {{ input('position_title', 'Role', form.position_title or '', required=not editing, placeholder='Fill the role', attrs='maxlength="100"') }}
+        {% if is_self %}
+          {{ input('access_level_display', 'Access level', roles[form.role], attrs='readonly') }}
+        {% else %}
+          {{ select('role', 'Access level', choice_pairs, form.role, required=True) }}
+        {% endif %}
       {% endif %}
       {{ input('password', 'New password' if editing else 'Password', '', 'password', required=not editing, placeholder='Leave blank to keep current' if editing else 'At least 8 characters, letters and numbers') }}
     </div>

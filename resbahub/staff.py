@@ -13,6 +13,7 @@ from flask import (
 
 from . import db
 from .auth import roles_required
+from .presence import get_user_presence
 from .utils import (
     ANNOUNCEMENT_CATEGORIES,
     CIVIL_STATUS,
@@ -72,6 +73,7 @@ def dashboard():
         unverified=unverified,
         total_residents=total_residents,
         pending=pending,
+        is_on_site=get_user_presence(g.user["id"]),
     )
 
 

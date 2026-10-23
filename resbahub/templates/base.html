@@ -35,6 +35,7 @@
           <a href="{{ url_for('health.patients') }}">Patients</a>
           <a href="{{ url_for('health.appointments') }}">Appointments</a>
           <a href="{{ url_for('health.visits') }}">Visits</a>
+          <a href="{{ url_for('health.medicines') }}">Medicines</a>
         {% endif %}
         {% if role != 'resident' %}
           <a href="{{ url_for('reports.reports') }}">Reports</a>

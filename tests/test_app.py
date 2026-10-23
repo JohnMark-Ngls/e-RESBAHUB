@@ -100,6 +100,7 @@ class Base(unittest.TestCase):
             )
 
         # Delete child records before their parent records.
+        db.execute("DELETE FROM staff_presence")
         tables_to_clear = (
             "request_documents",
             "request_history",
@@ -107,6 +108,7 @@ class Base(unittest.TestCase):
             "appointments",
             "requests",
             "notifications",
+            "medicine_inventory",
             "patients",
             "announcements",
             "audit_log",
@@ -265,6 +267,104 @@ class Base(unittest.TestCase):
             db.commit()
 
         return self.login(username)
+
+class DashboardAvailabilityTests(Base):
+    def test_medicine_inventory_is_managed_and_public_counts_are_hidden(self):
+        health = self.login("health1")
+        response = self.post(
+            health,
+            "/health/medicines",
+            {"name": "Vitamin C", "stock_quantity": "12"},
+        )
+        self.assertEqual(response.status_code, 302)
+
+        with self.app.app_context():
+            db.execute(
+                """
+                INSERT INTO medicine_inventory (name, stock_quantity)
+                VALUES (?, ?)
+                """,
+                ("Oral Rehydration Salts", 0),
+            )
+
+        staff = self.login("brgy1")
+        self.assertEqual(staff.get("/health/medicines").status_code, 403)
+
+        _, registration = self.register("resident1")
+        self.assertEqual(registration.status_code, 302)
+        resident = self.login("resident1")
+        dashboard = resident.get("/dashboard")
+        self.assertEqual(dashboard.status_code, 200)
+        self.assertIn(b"Vitamin C", dashboard.data)
+        self.assertNotIn(b"Oral Rehydration Salts", dashboard.data)
+        medicine_card = dashboard.data.split(
+            b"Medicines currently available", 1
+        )[1].split(b"</section>", 1)[0]
+        self.assertNotIn(b">12<", medicine_card)
+
+        public_home = self.client().get("/")
+        self.assertEqual(public_home.status_code, 200)
+        self.assertIn(b"Vitamin C", public_home.data)
+        self.assertNotIn(b"Oral Rehydration Salts", public_home.data)
+
+        with self.app.app_context():
+            medicine = db.query(
+                "SELECT id FROM medicine_inventory WHERE name = ?",
+                ("Vitamin C",),
+                one=True,
+            )
+        self.post(
+            health,
+            f"/health/medicines/{medicine['id']}/stock",
+            {"stock_quantity": "0"},
+        )
+        self.assertNotIn(b"Vitamin C", resident.get("/dashboard").data)
+
+    def test_staff_can_check_in_and_out_for_resident_status(self):
+        with self.app.app_context():
+            db.execute(
+                "UPDATE users SET full_name = ? WHERE username = ?",
+                ("Barangay Captain", "brgy1"),
+            )
+
+        barangay_staff = self.login("brgy1")
+        response = self.post(
+            barangay_staff, "/presence/update", {"is_on_site": "1"}
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(b"Check out", barangay_staff.get("/staff/").data)
+
+        health_staff = self.login("health1")
+        self.post(health_staff, "/presence/update", {"is_on_site": "1"})
+
+        admin = self.login("admin1")
+        self.post(admin, "/presence/update", {"is_on_site": "1"})
+
+        public_home = self.client().get("/")
+        self.assertIn(b"Barangay Captain", public_home.data)
+        self.assertIn(b"On duty", public_home.data)
+        self.assertIn(b"Barangay Personnel", public_home.data)
+        self.assertIn(b"Health Center Personnel", public_home.data)
+        self.assertNotIn(b"Admin1", public_home.data)
+        self.assertNotIn(b"Administrator", public_home.data)
+
+        response = self.post(
+            barangay_staff, "/presence/update", {"is_on_site": "0"}
+        )
+        self.assertEqual(response.status_code, 302)
+        public_home = self.client().get("/")
+        self.assertIn(b"Barangay Captain", public_home.data)
+        self.assertIn(b"Out", public_home.data)
+        self.assertIn(b"Health Center Personnel", public_home.data)
+        self.assertIn(b"On duty", public_home.data)
+
+        self.register("resident1")
+        resident_client = self.login("resident1")
+        self.assertIn(
+            b"Health Center Personnel",
+            resident_client.get("/dashboard").data,
+        )
+
 
 class AuthTests(Base):
     def test_public_pages(self):
@@ -1106,6 +1206,7 @@ class ReportsAdminTests(Base):
             "username": "nurse2",
             "email": "n2@x.ph",
             "full_name": "Nurse Two",
+            "position_title": "Community Health Officer",
             "role": "health_staff",
             "password": "Staff1234",
         }
@@ -1122,16 +1223,26 @@ class ReportsAdminTests(Base):
         self.login("nurse2", "Staff1234")
 
         with self.app.app_context():
-            user_id = db.query(
-                "SELECT id FROM users WHERE username = 'nurse2'",
+            created_user = db.query(
+                "SELECT id, position_title FROM users WHERE username = 'nurse2'",
                 one=True,
-            )["id"]
+            )
+            user_id = created_user["id"]
+            self.assertEqual(
+                created_user["position_title"],
+                "Community Health Officer",
+            )
             admin_id = db.query(
                 "SELECT id FROM users WHERE username = 'admin1'",
                 one=True,
             )["id"]
 
-        self.assertEqual(admin.get(f"/admin/users/{user_id}").status_code, 200)
+        edit_page = admin.get(f"/admin/users/{user_id}")
+        self.assertEqual(edit_page.status_code, 200)
+        self.assertIn(
+            b'value="Community Health Officer"',
+            edit_page.data,
+        )
 
         response = self.post(
             admin,
@@ -1139,11 +1250,23 @@ class ReportsAdminTests(Base):
             {
                 "email": "n2@x.ph",
                 "full_name": "Nurse Two",
+                "position_title": "Barangay Nurse",
                 "role": "barangay_staff",
                 "password": "",
             },
         )
         self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            updated_title = db.query(
+                "SELECT position_title FROM users WHERE id = ?",
+                (user_id,),
+                one=True,
+            )["position_title"]
+        self.assertEqual(updated_title, "Barangay Nurse")
+        self.assertIn(
+            b"Barangay Nurse",
+            admin.get("/admin/users?q=nurse2").data,
+        )
 
         client = self.client()
         response = self.post(
@@ -1162,6 +1285,7 @@ class ReportsAdminTests(Base):
             {
                 "email": "admin1@x.ph",
                 "full_name": "Admin1",
+                "position_title": "",
                 "role": "admin",
             },
         )
@@ -1173,6 +1297,61 @@ class ReportsAdminTests(Base):
             200,
         )
         self.assertEqual(admin.get(f"/admin/users/{admin_id}").status_code, 200)
+        self.assertNotIn(
+            f"/admin/users/{admin_id}/delete".encode(),
+            admin.get("/admin/users").data,
+        )
+        self.assertEqual(
+            self.post(
+                admin,
+                f"/admin/users/{admin_id}/delete",
+            ).status_code,
+            302,
+        )
+        with self.app.app_context():
+            self.assertIsNotNone(
+                db.query(
+                    "SELECT id FROM users WHERE id = ?",
+                    (admin_id,),
+                    one=True,
+                )
+            )
+
+        with self.app.app_context():
+            db.execute(
+                "INSERT INTO staff_presence (user_id, is_on_site) VALUES (?, 1)",
+                (user_id,),
+            )
+        delete_response = self.post(
+            admin,
+            f"/admin/users/{user_id}/delete",
+        )
+        self.assertEqual(delete_response.status_code, 302)
+        with self.app.app_context():
+            self.assertIsNone(
+                db.query(
+                    "SELECT id FROM users WHERE id = ?",
+                    (user_id,),
+                    one=True,
+                )
+            )
+            self.assertIsNone(
+                db.query(
+                    "SELECT user_id FROM staff_presence WHERE user_id = ?",
+                    (user_id,),
+                    one=True,
+                )
+            )
+            self.assertIsNotNone(
+                db.query(
+                    """
+                    SELECT id FROM audit_log
+                    WHERE action = 'user_delete'
+                      AND detail LIKE '%nurse2%'
+                    """,
+                    one=True,
+                )
+            )
 
     def test_services_admin(self):
         admin = self.login("admin1")

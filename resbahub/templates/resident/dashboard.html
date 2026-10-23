@@ -1,8 +1,11 @@
 {% extends 'base.html' %}
-{% from '_macros.html' import badge %}
+{% from '_macros.html' import badge, dashboard_clock, public_status_cards %}
 {% block title %}My Dashboard{% endblock %}
 {% block content %}
-<h1>Hello, {{ resident.first_name }}!</h1>
+<div class="row spread dashboard-heading">
+  <h1>Hello, {{ resident.first_name }}!</h1>
+  {{ dashboard_clock() }}
+</div>
 {% if not resident.is_verified %}
 <div class="notice warn"><strong>Account pending verification.</strong> Barangay personnel must verify your details before you can submit requests. You can still read announcements and update your profile.</div>
 {% endif %}
@@ -12,6 +15,7 @@
   <div class="card stat"><div class="num">{{ counts.get('Completed', 0) }}</div><div class="lbl">Completed</div></div>
   <div class="card stat"><div class="num">{{ counts.get('Rejected', 0) }}</div><div class="lbl">Rejected</div></div>
 </div>
+{{ public_status_cards(on_site_personnel, available_medicines, ROLE_LABELS) }}
 <div class="grid cols-2">
   <div class="card">
     <div class="row spread"><h2>Recent requests</h2><a class="btn sm" href="{{ url_for('resident.new_request') }}">+ New request</a></div>

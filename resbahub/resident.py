@@ -19,6 +19,7 @@ from mysql.connector import IntegrityError
 
 from . import db
 from .auth import login_required, roles_required
+from .presence import get_on_site_personnel
 from .utils import (
     ACTIVE_REQUEST_STATUSES,
     ANNOUNCEMENT_CATEGORIES,
@@ -93,6 +94,15 @@ def dashboard():
         LIMIT 3
         """
     )
+    on_site_personnel = get_on_site_personnel()
+    available_medicines = db.query(
+        """
+        SELECT name
+        FROM medicine_inventory
+        WHERE is_active = 1 AND stock_quantity > 0
+        ORDER BY name
+        """
+    )
 
     return render_template(
         "resident/dashboard.html",
@@ -100,6 +110,8 @@ def dashboard():
         counts=counts,
         recent=recent,
         announcements=announcements,
+        on_site_personnel=on_site_personnel,
+        available_medicines=available_medicines,
     )
 
 

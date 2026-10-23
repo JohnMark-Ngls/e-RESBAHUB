@@ -135,8 +135,24 @@ def home():
         LIMIT 3
         """
     )
+    from .presence import get_on_site_personnel
 
-    return render_template("index.html", announcements=announcements)
+    on_site_personnel = get_on_site_personnel()
+    available_medicines = db.query(
+        """
+        SELECT name
+        FROM medicine_inventory
+        WHERE is_active = 1 AND stock_quantity > 0
+        ORDER BY name
+        """
+    )
+
+    return render_template(
+        "index.html",
+        announcements=announcements,
+        on_site_personnel=on_site_personnel,
+        available_medicines=available_medicines,
+    )
 
 
 @bp.route("/login", methods=["GET", "POST"])

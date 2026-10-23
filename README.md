@@ -25,9 +25,12 @@ No Node.js, no XAMPP, and no database server to install. Only Python is required
 | Appointment and queue management | `/health/appointments` |
 | Health service management | Consultation, immunization, maternal and child health, health monitoring, and other services |
 | Patient visit monitoring | `/health/visits` and patient detail pages |
+| Medicine inventory and resident availability | `/health/medicines`, resident dashboard and welcome page |
+| Staff on-site check-in and resident status | Staff dashboards, resident dashboard and welcome page |
 | Search and record retrieval | `/search` and search boxes on lists |
 | Reports and monitoring | `/reports`, including CSV download and printing |
 | User access control | Resident, Barangay Personnel, Health Center Personnel, Administrator |
+| Staff role titles | Custom personnel titles, with a separate access level |
 
 ---
 
@@ -102,6 +105,8 @@ This initializes the local database and creates demo accounts.
 Use `python seed.py` without `--demo` for a clean system with only the administrator, according to the project's setup instructions.
 
 **Change the administrator password after your first login.**
+
+For existing installations, the application creates the medicine inventory and staff presence tables automatically at startup. The updated `resbahub/schema.sql` also includes them for new database setups.
 
 ### Step 6 - Run the System
 

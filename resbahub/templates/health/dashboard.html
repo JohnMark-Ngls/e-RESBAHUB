@@ -1,13 +1,34 @@
 {% extends 'base.html' %}
-{% from '_macros.html' import badge %}
+{% from '_macros.html' import badge, dashboard_clock, staff_presence_card %}
 {% block title %}Health Center Dashboard{% endblock %}
 {% block content %}
-<h1>Health center dashboard</h1>
+<div class="row spread dashboard-heading">
+  <h1>Health center dashboard</h1>
+  {{ dashboard_clock() }}
+</div>
+{{ staff_presence_card(is_on_site) }}
 <div class="grid cols-4">
   <div class="card stat"><div class="num">{{ appt_counts.values()|sum }}</div><div class="lbl">Appointments today</div></div>
   <div class="card stat"><div class="num">{{ appt_counts.get('Waiting', 0) }}</div><div class="lbl">Waiting now</div></div>
   <div class="card stat"><div class="num">{{ total_patients }}</div><div class="lbl">Registered patients</div></div>
   <div class="card stat"><div class="num">{{ visits_month }}</div><div class="lbl">Visits this month</div></div>
+</div>
+<div class="card">
+  <div class="row spread"><h2>Medicine inventory</h2>
+    <a class="btn sm" href="{{ url_for('health.medicines') }}">Manage inventory</a></div>
+  {% if medicine_inventory %}
+  <div class="table-wrap"><table>
+    <tr><th>Medicine</th><th>Stock</th><th>Resident availability</th><th>Visibility</th></tr>
+    {% for medicine in medicine_inventory %}
+    <tr>
+      <td>{{ medicine.name }}</td>
+      <td>{{ medicine.stock_quantity }}</td>
+      <td>{{ 'Available' if medicine.stock_quantity > 0 else 'Out of stock' }}</td>
+      <td>{{ 'Shown to residents' if medicine.is_active else 'Hidden' }}</td>
+    </tr>
+    {% endfor %}
+  </table></div>
+  {% else %}<p class="muted">No medicines have been added yet.</p>{% endif %}
 </div>
 <div class="card">
   <div class="row spread"><h2>Today's queue</h2>

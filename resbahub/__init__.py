@@ -96,9 +96,9 @@ def create_app(test_config=None):
 
     app.teardown_appcontext(db.close_db)
 
-    from . import admin, auth, health, reports, resident, staff
+    from . import admin, auth, health, presence, reports, resident, staff
 
-    for module in (auth, resident, staff, health, admin, reports):
+    for module in (auth, resident, staff, health, admin, reports, presence):
         app.register_blueprint(module.bp)
 
     @app.before_request

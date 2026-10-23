@@ -18,6 +18,7 @@ from mysql.connector import IntegrityError
 
 from . import db
 from .auth import roles_required
+from .presence import get_user_presence
 from .utils import (
     APPT_STATUSES,
     APPT_TRANSITIONS,
@@ -81,6 +82,13 @@ def dashboard():
         (month,),
         one=True,
     )["c"]
+    medicine_inventory = db.query(
+        """
+        SELECT id, name, stock_quantity, is_active, updated_at
+        FROM medicine_inventory
+        ORDER BY name
+        """
+    )
 
     return render_template(
         "health/dashboard.html",
@@ -88,7 +96,129 @@ def dashboard():
         queue=queue,
         total_patients=total_patients,
         visits_month=visits_month,
+        medicine_inventory=medicine_inventory,
+        is_on_site=get_user_presence(g.user["id"]),
     )
+
+
+@bp.route("/medicines", methods=["GET", "POST"])
+@roles_required(*HEALTH)
+def medicines():
+    if request.method == "POST":
+        name = (request.form.get("name") or "").strip()
+        quantity_text = (request.form.get("stock_quantity") or "").strip()
+        errors = []
+
+        if not name or len(name) > 120:
+            errors.append("Enter a medicine name up to 120 characters.")
+
+        try:
+            quantity = int(quantity_text)
+            if quantity < 0 or quantity > 2147483647:
+                raise ValueError
+        except ValueError:
+            errors.append("Stock quantity must be a whole number from 0 upward.")
+
+        if errors:
+            for error in errors:
+                flash(error, "danger")
+        else:
+            try:
+                db.execute(
+                    """
+                    INSERT INTO medicine_inventory
+                        (name, stock_quantity, updated_by)
+                    VALUES (?, ?, ?)
+                    """,
+                    (name, quantity, g.user["id"]),
+                )
+            except IntegrityError:
+                flash(
+                    "That medicine is already in the inventory. "
+                    "Update its stock in the list below.",
+                    "warning",
+                )
+            else:
+                audit("medicine_added", f"Added {name} (stock: {quantity})")
+                flash(f"{name} was added to the inventory.", "success")
+                return redirect(url_for("health.medicines"))
+
+    rows = db.query(
+        """
+        SELECT id, name, stock_quantity, is_active, updated_at
+        FROM medicine_inventory
+        ORDER BY name
+        """
+    )
+    return render_template("health/medicines.html", rows=rows)
+
+
+@bp.route("/medicines/<int:medicine_id>/stock", methods=["POST"])
+@roles_required(*HEALTH)
+def medicine_stock(medicine_id):
+    medicine = db.query(
+        "SELECT id, name FROM medicine_inventory WHERE id = ?",
+        (medicine_id,),
+        one=True,
+    )
+    if medicine is None:
+        abort(404)
+
+    quantity_text = (request.form.get("stock_quantity") or "").strip()
+    try:
+        quantity = int(quantity_text)
+        if quantity < 0 or quantity > 2147483647:
+            raise ValueError
+    except ValueError:
+        flash("Stock quantity must be a whole number from 0 upward.", "danger")
+    else:
+        db.execute(
+            """
+            UPDATE medicine_inventory
+            SET stock_quantity = ?, updated_by = ?
+            WHERE id = ?
+            """,
+            (quantity, g.user["id"], medicine_id),
+        )
+        audit(
+            "medicine_stock_updated",
+            f"Updated {medicine['name']} stock to {quantity}",
+        )
+        flash(f"{medicine['name']} stock was updated.", "success")
+
+    return redirect(url_for("health.medicines"))
+
+
+@bp.route("/medicines/<int:medicine_id>/toggle", methods=["POST"])
+@roles_required(*HEALTH)
+def medicine_toggle(medicine_id):
+    medicine = db.query(
+        "SELECT id, name, is_active FROM medicine_inventory WHERE id = ?",
+        (medicine_id,),
+        one=True,
+    )
+    if medicine is None:
+        abort(404)
+
+    active = not bool(medicine["is_active"])
+    db.execute(
+        """
+        UPDATE medicine_inventory
+        SET is_active = ?, updated_by = ?
+        WHERE id = ?
+        """,
+        (active, g.user["id"], medicine_id),
+    )
+    audit(
+        "medicine_visibility_updated",
+        f"{'Published' if active else 'Unpublished'} {medicine['name']}",
+    )
+    flash(
+        f"{medicine['name']} is now "
+        f"{'visible' if active else 'hidden'} to residents.",
+        "success",
+    )
+    return redirect(url_for("health.medicines"))
 
 
 # Patients

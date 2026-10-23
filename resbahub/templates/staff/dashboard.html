@@ -1,8 +1,12 @@
 {% extends 'base.html' %}
-{% from '_macros.html' import badge %}
+{% from '_macros.html' import badge, dashboard_clock, staff_presence_card %}
 {% block title %}Barangay Dashboard{% endblock %}
 {% block content %}
-<h1>Barangay dashboard</h1>
+<div class="row spread dashboard-heading">
+  <h1>Barangay dashboard</h1>
+  {{ dashboard_clock() }}
+</div>
+{{ staff_presence_card(is_on_site) }}
 <div class="grid cols-4">
   <div class="card stat"><div class="num">{{ counts.get('Pending', 0) }}</div><div class="lbl">Pending requests</div></div>
   <div class="card stat"><div class="num">{{ counts.get('Processing', 0) + counts.get('Approved', 0) }}</div><div class="lbl">Ongoing (processing / approved)</div></div>

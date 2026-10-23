@@ -2,11 +2,89 @@
 
 {% macro badge(status) %}<span class="badge {{ status.split(' ')[0] }}">{{ status }}</span>{% endmacro %}
 
+{% macro dashboard_clock() %}
+<aside class="dashboard-clock" aria-label="Current local date and time">
+  <span class="dashboard-clock-label">Local date &amp; time</span>
+  <time class="dashboard-clock-time" data-live-clock>--:--:--</time>
+  <time class="dashboard-clock-date" data-live-date>Loading date</time>
+</aside>
+{% endmacro %}
+
+{% macro staff_presence_card(is_on_site) %}
+<div class="card presence-card">
+  <div>
+    <h2>Your on-site status</h2>
+    <p class="muted">{{ 'You are marked as on-site.' if is_on_site else 'You are marked as off-site.' }}</p>
+    <p class="muted small">Please update this when arriving at or leaving the barangay.</p>
+  </div>
+  <form method="post" action="{{ url_for('presence.update') }}">
+    {{ csrf() }}
+    <input type="hidden" name="is_on_site" value="{{ 0 if is_on_site else 1 }}">
+    <button class="btn {{ 'secondary' if is_on_site else '' }}" type="submit">
+      {{ 'Check out' if is_on_site else 'Check in as on-site' }}
+    </button>
+  </form>
+</div>
+{% endmacro %}
+
+{% macro public_status_cards(on_site_personnel, available_medicines, role_labels) %}
+<div class="grid cols-2">
+  <section class="card">
+    <h2>Personnel duty status</h2>
+    <p class="muted small">Staff update their status themselves; it may not reflect immediate availability.</p>
+    {% if on_site_personnel %}
+    <ul class="availability-list">
+      {% for person in on_site_personnel %}
+      <li>
+        <div class="person-details">
+          <strong>{{ person.full_name }}</strong>
+          <span class="muted">{{ person.position_title or role_labels[person.role] }}</span>
+        </div>
+        <span class="badge {{ 'ok' if person.is_on_site else 'off-duty' }}">
+          {{ 'On duty' if person.is_on_site else 'Out' }}
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No active personnel accounts are available.</p>
+    {% endif %}
+  </section>
+  <section class="card">
+    <h2>Medicines currently available</h2>
+    {% if available_medicines %}
+    <ul class="availability-list">
+      {% for medicine in available_medicines %}
+      <li><strong>{{ medicine.name }}</strong><span class="badge ok">Available</span></li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No medicines are currently listed as available.</p>
+    {% endif %}
+    <p class="muted small">Availability may change. Please confirm with Health Center staff.</p>
+  </section>
+</div>
+{% endmacro %}
+
 {% macro input(name, label, value='', type='text', required=False, placeholder='', attrs='', cls='') %}
 <div class="field {{ cls }}">
   <label for="{{ name }}">{{ label }}{% if required %} <span class="req">*</span>{% endif %}</label>
+  {% if type == 'password' %}
+  <div class="password-input-wrap">
+    <input id="{{ name }}" name="{{ name }}" type="password" value="{{ value if value is not none else '' }}"
+           placeholder="{{ placeholder }}" {% if required %}required{% endif %} {{ attrs|safe }}>
+    <button class="password-toggle" type="button" data-toggle-password="{{ name }}" aria-label="Show password" aria-pressed="false">
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+        <path class="password-eye-slash" d="m4 4 16 16"></path>
+      </svg>
+    </button>
+  </div>
+  {% else %}
   <input id="{{ name }}" name="{{ name }}" type="{{ type }}" value="{{ value if value is not none else '' }}"
          placeholder="{{ placeholder }}" {% if required %}required{% endif %} {{ attrs|safe }}>
+  {% endif %}
 </div>
 {% endmacro %}
 

@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf, input %}
+{% block title %}Medicine inventory{% endblock %}
+{% block content %}
+<div class="row spread">
+  <h1>Medicine inventory</h1>
+  <a class="btn secondary" href="{{ url_for('health.dashboard') }}">Health Center dashboard</a>
+</div>
+<div class="card">
+  <h2>Add medicine</h2>
+  <form method="post">
+    {{ csrf() }}
+    <div class="form-grid">
+      {{ input('name', 'Medicine name', '', required=True, attrs='maxlength="120"') }}
+      {{ input('stock_quantity', 'Current stock', '', 'number', required=True, attrs='min="0" step="1"') }}
+    </div>
+    <button class="btn" type="submit">Add to inventory</button>
+  </form>
+</div>
+<div class="card table-wrap">
+  <h2>Current inventory</h2>
+  {% if rows %}
+  <table>
+    <tr><th>Medicine</th><th>Stock</th><th>Visibility</th><th>Last updated</th><th>Actions</th></tr>
+    {% for medicine in rows %}
+    <tr>
+      <td>{{ medicine.name }}</td>
+      <td>
+        <form class="row inventory-stock-form" method="post" action="{{ url_for('health.medicine_stock', medicine_id=medicine.id) }}">
+          {{ csrf() }}
+          <input type="number" name="stock_quantity" min="0" step="1" required value="{{ medicine.stock_quantity }}" aria-label="Stock for {{ medicine.name }}">
+          <button class="btn sm" type="submit">Update stock</button>
+        </form>
+      </td>
+      <td>{{ 'Shown to residents' if medicine.is_active else 'Hidden from residents' }}</td>
+      <td>{{ medicine.updated_at|dt }}</td>
+      <td>
+        <form method="post" action="{{ url_for('health.medicine_toggle', medicine_id=medicine.id) }}">
+          {{ csrf() }}
+          <button class="btn sm secondary" type="submit">{{ 'Hide' if medicine.is_active else 'Show' }}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}
+  <p class="muted">No medicines have been added yet.</p>
+  {% endif %}
+</div>
+{% endblock %}

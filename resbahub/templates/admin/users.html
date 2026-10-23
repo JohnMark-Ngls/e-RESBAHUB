@@ -1,20 +1,28 @@
 {% extends 'base.html' %}
-{% from '_macros.html' import select, input %}
+{% from '_macros.html' import select, input, csrf %}
 {% block title %}Users{% endblock %}
 {% block content %}
 <div class="row spread"><h1>User accounts</h1><a class="btn" href="{{ url_for('admin.user_new') }}">+ New staff account</a></div>
 <form class="filters" method="get">
-  {{ input('q', 'Search', q, placeholder='Username, name or email') }}
+  {{ input('q', 'Search', q, placeholder='Username, name, role or email') }}
   {{ select('role', 'Role', roles.items()|list, role, blank='All roles') }}
   <button class="btn secondary" type="submit">Filter</button>
 </form>
 <div class="card table-wrap"><table>
-  <tr><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last login</th><th></th></tr>
+  <tr><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last login</th><th>Actions</th></tr>
   {% for u in rows %}
-  <tr><td>{{ u.username }}</td><td>{{ u.full_name }}</td><td>{{ u.email }}</td><td>{{ roles[u.role] }}</td>
+  <tr><td>{{ u.username }}</td><td>{{ u.full_name }}</td><td>{{ u.email }}</td><td>{{ u.position_title or roles[u.role] }}</td>
   <td>{% if u.is_active %}<span class="badge ok">Active</span>{% else %}<span class="badge Rejected">Disabled</span>{% endif %}</td>
   <td>{{ u.last_login|dt }}</td>
-  <td><a class="btn sm" href="{{ url_for('admin.user_edit', user_id=u.id) }}">Edit</a></td></tr>
+  <td class="user-actions">
+    <a class="btn sm" href="{{ url_for('admin.user_edit', user_id=u.id) }}">Edit</a>
+    {% if u.role != 'resident' and u.id != current_user.id %}
+    <form method="post" action="{{ url_for('admin.user_delete', user_id=u.id) }}" data-confirm="Permanently delete {{ u.username }}? Related staff references will be kept without this account.">
+      {{ csrf() }}
+      <button class="btn sm danger" type="submit">Delete</button>
+    </form>
+    {% endif %}
+  </td></tr>
   {% endfor %}
 </table></div>
 {% endblock %}

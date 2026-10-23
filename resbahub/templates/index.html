@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from '_macros.html' import public_status_cards %}
 {% block title %}Welcome{% endblock %}
 {% block content %}
 <section class="hero">
@@ -14,6 +15,7 @@
   <div class="card"><h3>Health center records</h3><p class="muted">Patient records, appointments and queue, immunization, maternal and child health, and visit monitoring.</p></div>
   <div class="card"><h3>Announcements</h3><p class="muted">Stay updated with barangay schedules, reminders and health activities.</p></div>
 </div>
+{{ public_status_cards(on_site_personnel, available_medicines, ROLE_LABELS) }}
 {% if announcements %}
 <div class="card">
   <h2>Latest announcements</h2>

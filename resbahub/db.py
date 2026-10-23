@@ -84,7 +84,7 @@ def close_db(exc=None):
 
 
 def init_db():
-    """Verify the MariaDB connection and required tables."""
+    """Verify the database and create tables added by application upgrades."""
     conn = get_db()
     cursor = conn.cursor()
 
@@ -97,5 +97,39 @@ def init_db():
                 "No tables found in the eresbahub database. "
                 "Import the schema using phpMyAdmin first."
             )
+
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS medicine_inventory (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(120) NOT NULL UNIQUE,
+                stock_quantity INT UNSIGNED NOT NULL DEFAULT 0,
+                is_active TINYINT(1) NOT NULL DEFAULT 1,
+                updated_by INT UNSIGNED NULL,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (updated_by)
+                    REFERENCES users(id) ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            """
+        )
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS staff_presence (
+                user_id INT UNSIGNED PRIMARY KEY,
+                is_on_site TINYINT(1) NOT NULL DEFAULT 0,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    ON UPDATE CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id)
+                    REFERENCES users(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            """
+        )
+        cursor.execute("SHOW COLUMNS FROM users LIKE 'position_title'")
+        if cursor.fetchone() is None:
+            cursor.execute(
+                "ALTER TABLE users ADD COLUMN position_title VARCHAR(100) NULL"
+            )
+        conn.commit()
     finally:
         cursor.close()

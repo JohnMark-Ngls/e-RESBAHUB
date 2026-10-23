@@ -15,6 +15,7 @@ from werkzeug.security import generate_password_hash
 
 from . import db
 from .auth import roles_required
+from .presence import get_user_presence
 from .utils import (
     EMAIL_RE,
     ROLE_LABELS,
@@ -64,6 +65,7 @@ def dashboard():
         by_role=by_role,
         inactive=inactive,
         recent=recent,
+        is_on_site=get_user_presence(g.user["id"]),
     )
 
 
@@ -84,9 +86,10 @@ def users():
         sql += (
             " AND (username LIKE ?"
             " OR full_name LIKE ?"
-            " OR email LIKE ?)"
+            " OR email LIKE ?"
+            " OR position_title LIKE ?)"
         )
-        args.extend([like(q)] * 3)
+        args.extend([like(q)] * 4)
 
     rows = db.query(
         sql + " ORDER BY role, full_name LIMIT 300",
@@ -105,12 +108,18 @@ def users():
 @bp.route("/users/new", methods=["GET", "POST"])
 @roles_required()
 def user_new():
-    form = {"role": "barangay_staff"}
+    form = {"role": "barangay_staff", "position_title": ""}
 
     if request.method == "POST":
         form = {
             key: (request.form.get(key) or "").strip()
-            for key in ("username", "email", "full_name", "role")
+            for key in (
+                "username",
+                "email",
+                "full_name",
+                "position_title",
+                "role",
+            )
         }
 
         password = request.form.get("password") or ""
@@ -129,7 +138,10 @@ def user_new():
             errors.append("Full name must be 2-100 characters.")
 
         if form["role"] not in STAFF_CHOICES:
-            errors.append("Please choose a role.")
+            errors.append("Please choose an access level.")
+
+        if not form["position_title"] or len(form["position_title"]) > 100:
+            errors.append("Enter a role or position title up to 100 characters.")
 
         problem = password_problem(password)
         if problem:
@@ -159,14 +171,16 @@ def user_new():
                 db.execute(
                     """
                     INSERT INTO users (
-                        username, email, full_name, password_hash, role
+                        username, email, full_name, position_title,
+                        password_hash, role
                     )
-                    VALUES (?, ?, ?, ?, ?)
+                    VALUES (?, ?, ?, ?, ?, ?)
                     """,
                     (
                         form["username"],
                         form["email"],
                         form["full_name"],
+                        form["position_title"],
                         generate_password_hash(password),
                         form["role"],
                     ),
@@ -174,7 +188,7 @@ def user_new():
 
                 audit(
                     "user_create",
-                    f"{form['username']} ({form['role']})",
+                    f"{form['username']} ({form['position_title']}; access: {form['role']})",
                 )
 
                 flash("User account created.", "success")
@@ -219,6 +233,12 @@ def user_edit(user_id):
         form = {
             "email": (request.form.get("email") or "").strip(),
             "full_name": (request.form.get("full_name") or "").strip(),
+            "position_title": (
+                request.form.get(
+                    "position_title",
+                    user.get("position_title") or "",
+                ) or ""
+            ).strip(),
             "role": request.form.get("role", user["role"]),
             "is_active": 1 if request.form.get("is_active") else 0,
         }
@@ -235,7 +255,10 @@ def user_edit(user_id):
         if user["role"] == "resident":
             form["role"] = "resident"
         elif form["role"] not in STAFF_CHOICES:
-            errors.append("Please choose a role.")
+            errors.append("Please choose an access level.")
+
+        if len(form["position_title"]) > 100:
+            errors.append("Role or position title must be 100 characters or fewer.")
 
         if is_self and (
             not form["is_active"] or form["role"] != user["role"]
@@ -272,6 +295,7 @@ def user_edit(user_id):
                     UPDATE users
                     SET email = %s,
                         full_name = %s,
+                        position_title = NULLIF(%s, ''),
                         role = %s,
                         is_active = %s
                     WHERE id = %s
@@ -279,6 +303,7 @@ def user_edit(user_id):
                     (
                         form["email"],
                         form["full_name"],
+                        form["position_title"],
                         form["role"],
                         form["is_active"],
                         user_id,
@@ -351,6 +376,58 @@ def user_edit(user_id):
         ],
         roles=ROLE_LABELS,
     )
+
+
+@bp.route("/users/<int:user_id>/delete", methods=["POST"])
+@roles_required()
+def user_delete(user_id):
+    user = db.query(
+        "SELECT id, username, full_name, role, is_active FROM users WHERE id = ?",
+        (user_id,),
+        one=True,
+    )
+
+    if user is None or user["role"] == "resident":
+        abort(404)
+
+    if user["id"] == g.user["id"]:
+        flash("You cannot delete your own account.", "danger")
+        return redirect(url_for("admin.users"))
+
+    if user["role"] == "admin" and user["is_active"]:
+        active_admins = db.query(
+            """
+            SELECT COUNT(*) AS c
+            FROM users
+            WHERE role = 'admin' AND is_active = 1
+            """,
+            one=True,
+        )["c"]
+        if active_admins <= 1:
+            flash("You cannot delete the last active administrator.", "danger")
+            return redirect(url_for("admin.users"))
+
+    conn = db.get_db()
+    cursor = conn.cursor()
+
+    try:
+        audit(
+            "user_delete",
+            f"Deleted {user['username']} ({user['full_name']}; {user['role']})",
+            commit=False,
+        )
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        if cursor.rowcount != 1:
+            raise RuntimeError("The selected user could not be deleted.")
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        cursor.close()
+
+    flash(f"Account {user['username']} was deleted.", "success")
+    return redirect(url_for("admin.users"))
 
 
 @bp.route("/services", methods=["GET", "POST"])

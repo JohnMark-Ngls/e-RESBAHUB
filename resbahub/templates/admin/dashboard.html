@@ -1,7 +1,12 @@
 {% extends 'base.html' %}
+{% from '_macros.html' import dashboard_clock, staff_presence_card %}
 {% block title %}Administrator{% endblock %}
 {% block content %}
-<h1>Administrator</h1>
+<div class="row spread dashboard-heading">
+  <h1>Administrator</h1>
+  {{ dashboard_clock() }}
+</div>
+{{ staff_presence_card(is_on_site) }}
 <div class="grid cols-4">
   {% for key, label in ROLE_LABELS.items() %}
   <div class="card stat"><div class="num">{{ by_role.get(key, 0) }}</div><div class="lbl">{{ label }} accounts</div></div>
