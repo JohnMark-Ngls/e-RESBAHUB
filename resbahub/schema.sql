@@ -183,6 +183,10 @@ CREATE TABLE IF NOT EXISTS audit_log (
 CREATE TABLE IF NOT EXISTS medicine_inventory (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(120) NOT NULL UNIQUE,
+    condition_name VARCHAR(120) NULL,
+    strength VARCHAR(60) NULL,
+    form VARCHAR(20) NULL,
+    description VARCHAR(255) NULL,
     stock_quantity INT UNSIGNED NOT NULL DEFAULT 0,
     is_active TINYINT(1) NOT NULL DEFAULT 1,
     updated_by INT UNSIGNED NULL,

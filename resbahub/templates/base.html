@@ -18,10 +18,12 @@
         {% set role = current_user.role %}
         {% if role == 'resident' %}
           <a href="{{ url_for('resident.dashboard') }}">Dashboard</a>
+          <a href="{{ url_for('resident.medicine') }}">Medicines</a>
           <a href="{{ url_for('resident.new_request') }}">New Request</a>
           <a href="{{ url_for('resident.my_requests') }}">My Requests</a>
           <a href="{{ url_for('resident.announcements') }}">Announcements</a>
           <a href="{{ url_for('resident.notifications') }}">Notifications{% if unread_count %}<span class="badge-count">{{ unread_count }}</span>{% endif %}</a>
+          <a href="{{ url_for('resident.medicine') }}">Medicine</a>
           <a href="{{ url_for('resident.profile') }}">My Profile</a>
         {% endif %}
         {% if role in ('barangay_staff', 'admin') %}

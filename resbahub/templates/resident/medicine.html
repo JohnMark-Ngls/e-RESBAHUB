@@ -1,0 +1,98 @@
+
+{% extends 'base.html' %}
+
+{% block title %}Medicine{% endblock %}
+
+{% block content %}
+<div class="medicine-page">
+
+  <div class="medicine-heading">
+    <h1>Available Free Medicines</h1>
+    <p>
+      Check the list of free medicines available at the Barangay Hall.
+      Medicines are grouped by medical condition for your convenience.
+    </p>
+  </div>
+
+  {% set groups = medicines|groupby('condition_name') %}
+
+  {% if groups %}
+    <div class="card medicine-list">
+
+      {% for condition, items in groups %}
+        <details class="medicine-condition" {% if loop.first %}open{% endif %}>
+
+          <summary>
+            <span class="condition-title">
+              {{ condition }}
+            </span>
+            <span class="condition-count">
+              {{ items|length }}
+              medicine{% if items|length != 1 %}s{% endif %}
+            </span>
+          </summary>
+
+          <div class="medicine-items">
+            {% for medicine in items %}
+              <div class="medicine-item">
+
+                <div class="medicine-info">
+                  <h3>{{ medicine.medicine_name }}</h3>
+
+                  <p class="medicine-details">
+                    {% if medicine.strength %}
+                      {{ medicine.strength }}
+                    {% endif %}
+
+                    {% if medicine.strength and medicine.form %}
+                      ·
+                    {% endif %}
+
+                    {% if medicine.form %}
+                      {{ medicine.form }}
+                    {% endif %}
+                  </p>
+
+                  {% if medicine.description %}
+                    <p>{{ medicine.description }}</p>
+                  {% endif %}
+                </div>
+
+                <div class="medicine-stock">
+                  {% if medicine.stock_quantity > 0 %}
+                    <span class="medicine-status available">Available</span>
+                  {% else %}
+                    <span class="medicine-status unavailable">
+                      Out of stock
+                    </span>
+                  {% endif %}
+                </div>
+
+              </div>
+            {% endfor %}
+          </div>
+
+        </details>
+      {% endfor %}
+
+    </div>
+
+  {% else %}
+    <div class="card medicine-empty">
+      <h2>No medicines listed yet</h2>
+      <p>
+        There are currently no medicine records to display.
+        Please check again later or contact the Barangay Health Worker.
+      </p>
+    </div>
+  {% endif %}
+
+  <div class="medicine-note">
+    <strong>Important:</strong>
+    Medicine availability may change as stock is updated.
+    Please coordinate with the Barangay Health Worker or Barangay Hall
+    staff for confirmation and proper guidance.
+  </div>
+
+</div>
+{% endblock %}

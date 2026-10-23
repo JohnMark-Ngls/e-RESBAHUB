@@ -105,12 +105,28 @@ def dashboard():
 @roles_required(*HEALTH)
 def medicines():
     if request.method == "POST":
-        name = (request.form.get("name") or "").strip()
+        name = (
+            request.form.get("medicine_name")
+            or request.form.get("name")
+            or ""
+        ).strip()
+        condition = (request.form.get("condition_name") or "").strip()
+        strength = (request.form.get("strength") or "").strip()
+        medicine_form = (request.form.get("form") or "").strip()
+        description = (request.form.get("description") or "").strip()
         quantity_text = (request.form.get("stock_quantity") or "").strip()
         errors = []
 
         if not name or len(name) > 120:
             errors.append("Enter a medicine name up to 120 characters.")
+        if (
+            len(condition) > 120
+            or len(strength) > 60
+            or len(description) > 255
+        ):
+            errors.append("Medicine details exceed the allowed length.")
+        if medicine_form not in ("", "Tablet", "Capsule", "Syrup", "Other"):
+            errors.append("Choose a valid medicine form.")
 
         try:
             quantity = int(quantity_text)
@@ -127,27 +143,42 @@ def medicines():
                 db.execute(
                     """
                     INSERT INTO medicine_inventory
-                        (name, stock_quantity, updated_by)
-                    VALUES (?, ?, ?)
+                        (name, condition_name, strength, form,
+                         description, stock_quantity, updated_by)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE
+                        condition_name = VALUES(condition_name),
+                        strength = VALUES(strength),
+                        form = VALUES(form),
+                        description = VALUES(description),
+                        stock_quantity = stock_quantity + VALUES(stock_quantity),
+                        is_active = 1,
+                        updated_by = VALUES(updated_by),
+                        updated_at = CURRENT_TIMESTAMP
                     """,
-                    (name, quantity, g.user["id"]),
+                    (
+                        name,
+                        condition or None,
+                        strength or None,
+                        medicine_form or None,
+                        description or None,
+                        quantity,
+                        g.user["id"],
+                    ),
                 )
-            except IntegrityError:
-                flash(
-                    "That medicine is already in the inventory. "
-                    "Update its stock in the list below.",
-                    "warning",
-                )
-            else:
-                audit("medicine_added", f"Added {name} (stock: {quantity})")
-                flash(f"{name} was added to the inventory.", "success")
-                return redirect(url_for("health.medicines"))
+            except Exception:
+                db.rollback()
+                raise
+            audit("medicine_added", f"Added {name} (stock: {quantity})")
+            flash(f"{name} was added or updated in the inventory.", "success")
+            return redirect(url_for("health.medicines"))
 
     rows = db.query(
         """
-        SELECT id, name, stock_quantity, is_active, updated_at
+        SELECT id, name, condition_name, strength, form, description,
+               stock_quantity, is_active, updated_at
         FROM medicine_inventory
-        ORDER BY name
+        ORDER BY condition_name, name
         """
     )
     return render_template("health/medicines.html", rows=rows)

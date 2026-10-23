@@ -640,6 +640,24 @@ def announcements():
     )
 
 
+@bp.route("/medicine")
+@roles_required("resident", admin=False)
+def medicine():
+    medicines = db.query(
+        """
+        SELECT id, condition_name, name AS medicine_name,
+               strength, form, stock_quantity, description
+        FROM medicine_inventory
+        WHERE is_active = 1
+        ORDER BY condition_name, name
+        """
+    )
+
+    return render_template(
+        "resident/medicine.html",
+        medicines=medicines,
+    )
+
 @bp.route("/notifications")
 @roles_required("resident", admin=False)
 def notifications():

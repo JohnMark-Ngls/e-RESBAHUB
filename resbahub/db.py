@@ -103,6 +103,10 @@ def init_db():
             CREATE TABLE IF NOT EXISTS medicine_inventory (
                 id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 name VARCHAR(120) NOT NULL UNIQUE,
+                condition_name VARCHAR(120) NULL,
+                strength VARCHAR(60) NULL,
+                form VARCHAR(20) NULL,
+                description VARCHAR(255) NULL,
                 stock_quantity INT UNSIGNED NOT NULL DEFAULT 0,
                 is_active TINYINT(1) NOT NULL DEFAULT 1,
                 updated_by INT UNSIGNED NULL,
@@ -113,6 +117,22 @@ def init_db():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             """
         )
+        medicine_columns = (
+            ("condition_name", "VARCHAR(120) NULL"),
+            ("strength", "VARCHAR(60) NULL"),
+            ("form", "VARCHAR(20) NULL"),
+            ("description", "VARCHAR(255) NULL"),
+        )
+        for column, definition in medicine_columns:
+            cursor.execute(
+                f"SHOW COLUMNS FROM medicine_inventory LIKE '{column}'"
+            )
+            if cursor.fetchone() is None:
+                cursor.execute(
+                    f"ALTER TABLE medicine_inventory "
+                    f"ADD COLUMN {column} {definition}"
+                )
+
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS staff_presence (
