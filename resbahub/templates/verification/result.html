@@ -1,0 +1,114 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Certificate Verification | e-RESBAHUB</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: Arial, sans-serif;
+            background: #f3f6fa;
+            color: #172033;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 560px;
+            margin: 40px auto;
+            padding: 28px;
+            background: white;
+            border-radius: 14px;
+            box-shadow: 0 8px 28px rgba(0, 0, 0, .08);
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 25px;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 9px 14px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin: 8px 0 16px;
+        }
+
+        .VALID {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .REVOKED {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .INVALID {
+            background: #ffedd5;
+            color: #9a3412;
+        }
+
+        .detail {
+            border-top: 1px solid #e5e7eb;
+            padding: 12px 0;
+            overflow-wrap: anywhere;
+        }
+
+        .label {
+            display: block;
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+
+        footer {
+            margin-top: 24px;
+            color: #64748b;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+    <main class="card">
+        <h1>e-RESBAHUB</h1>
+        <p>Barangay Certificate Verification</p>
+
+        <div class="status {{ result_status }}">
+            {{ result_status }}
+        </div>
+
+        <p>{{ message }}</p>
+
+        {% if certificate %}
+            <div class="detail">
+                <span class="label">Reference Number</span>
+                {{ certificate.reference_no }}
+            </div>
+
+            <div class="detail">
+                <span class="label">Certificate Type</span>
+                {{ certificate.service_name }}
+            </div>
+
+            <div class="detail">
+                <span class="label">Issued / Completed Date</span>
+                {{ certificate.issued_at | dt }}
+            </div>
+        {% endif %}
+
+        <footer>
+            For confirmation, contact your barangay office.
+        </footer>
+    </main>
+</body>
+</html>

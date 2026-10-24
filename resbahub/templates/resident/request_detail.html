@@ -1,61 +1,211 @@
 {% extends 'base.html' %}
 {% from '_macros.html' import csrf, badge %}
+
 {% block title %}Request {{ r.reference_no }}{% endblock %}
+
 {% block content %}
 <div class="row spread">
   <h1>Request {{ r.reference_no }} {{ badge(r.status) }}</h1>
-  <a class="btn secondary noprint" href="{{ url_for('staff.requests_list') if is_staff else url_for('resident.my_requests') }}">&larr; Back</a>
+  <a class="btn secondary noprint"
+     href="{{ url_for('staff.requests_list') if is_staff else url_for('resident.my_requests') }}">
+    &larr; Back
+  </a>
 </div>
+
 <div class="grid cols-2">
   <div class="card">
     <h2>Request details</h2>
+
     <dl class="kv">
-      <dt>Service</dt><dd>{{ r.service_name }}{% if r.fee %} (PHP {{ '%.2f'|format(r.fee) }}){% endif %}</dd>
-      <dt>Purpose</dt><dd>{{ r.purpose }}</dd>
-      <dt>Submitted</dt><dd>{{ r.created_at|dt }}</dd>
-      <dt>Last update</dt><dd>{{ r.updated_at|dt }}</dd>
-      <dt>Processed by</dt><dd>{{ r.processed_by_name or '-' }}</dd>
-      <dt>Remarks</dt><dd>{{ r.remarks or '-' }}</dd>
+      <dt>Service</dt>
+      <dd>
+        {{ r.service_name }}
+        {% if r.fee %}(PHP {{ '%.2f'|format(r.fee) }}){% endif %}
+      </dd>
+
+      <dt>Purpose</dt>
+      <dd>{{ r.purpose }}</dd>
+
+      <dt>Submitted</dt>
+      <dd>{{ r.created_at|dt }}</dd>
+
+      <dt>Last update</dt>
+      <dd>{{ r.updated_at|dt }}</dd>
+
+      <dt>Processed by</dt>
+      <dd>{{ r.processed_by_name or '-' }}</dd>
+
+      <dt>Remarks</dt>
+      <dd>{{ r.remarks or '-' }}</dd>
     </dl>
+
     <h3>Resident</h3>
     <dl class="kv">
-      <dt>Name</dt><dd>{{ r.first_name }} {{ r.middle_name or '' }} {{ r.last_name }} {{ r.suffix or '' }}</dd>
-      <dt>Contact</dt><dd>{{ r.contact_no }}</dd>
-      <dt>Address</dt><dd>{{ r.address }}</dd>
-      <dt>Account</dt><dd>{% if r.is_verified %}Verified{% else %}Not verified{% endif %}</dd>
+      <dt>Name</dt>
+      <dd>
+        {{ r.first_name }} {{ r.middle_name or '' }}
+        {{ r.last_name }} {{ r.suffix or '' }}
+      </dd>
+
+      <dt>Contact</dt>
+      <dd>{{ r.contact_no }}</dd>
+
+      <dt>Address</dt>
+      <dd>{{ r.address }}</dd>
+
+      <dt>Account</dt>
+      <dd>
+        {% if r.is_verified %}
+          Verified
+        {% else %}
+          Not verified
+        {% endif %}
+      </dd>
     </dl>
+
     <h3>Documents</h3>
-    {% for d in docs %}<p><a href="{{ url_for('resident.download_document', doc_id=d.id) }}">{{ d.original_name }}</a> <span class="muted small">{{ d.uploaded_at|dt }}</span></p>
-    {% else %}<p class="muted">No documents uploaded.</p>{% endfor %}
+    {% for d in docs %}
+      <p>
+        <a href="{{ url_for('resident.download_document', doc_id=d.id) }}">
+          {{ d.original_name }}
+        </a>
+        <span class="muted small">{{ d.uploaded_at|dt }}</span>
+      </p>
+    {% else %}
+      <p class="muted">No documents uploaded.</p>
+    {% endfor %}
+
     {% if not is_staff and r.status == 'Pending' %}
-    <form method="post" action="{{ url_for('resident.cancel_request', request_id=r.id) }}" data-confirm="Cancel this request?">
-      {{ csrf() }}<button class="btn danger sm" type="submit">Cancel request</button>
-    </form>
+      <form
+        method="post"
+        action="{{ url_for('resident.cancel_request', request_id=r.id) }}"
+        data-confirm="Cancel this request?"
+      >
+        {{ csrf() }}
+        <button class="btn danger sm" type="submit">
+          Cancel request
+        </button>
+      </form>
     {% endif %}
   </div>
+
   <div>
     {% if is_staff and next_statuses %}
-    <div class="card noprint">
-      <h2>Process request</h2>
-      <form method="post" action="{{ url_for('staff.update_request', request_id=r.id) }}">
-        {{ csrf() }}
-        <div class="field"><label for="status">Change status to</label>
-          <select id="status" name="status" required>
-            {% for s in next_statuses %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
-          </select></div>
-        <div class="field"><label for="remarks">Remarks (required when rejecting)</label>
-          <textarea id="remarks" name="remarks" rows="3" maxlength="500"></textarea></div>
-        <button class="btn" type="submit">Update status</button>
-      </form>
-    </div>
+      <div class="card noprint">
+        <h2>Process request</h2>
+
+        <form
+          method="post"
+          action="{{ url_for('staff.update_request', request_id=r.id) }}"
+        >
+          {{ csrf() }}
+
+          <div class="field">
+            <label for="status">Change status to</label>
+            <select id="status" name="status" required>
+              {% for s in next_statuses %}
+                <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="remarks">Remarks (required when rejecting)</label>
+            <textarea
+              id="remarks"
+              name="remarks"
+              rows="3"
+              maxlength="500"
+            ></textarea>
+          </div>
+
+          <button class="btn" type="submit">Update status</button>
+        </form>
+      </div>
     {% endif %}
+
+    {% if r.status == 'Completed' and verification %}
+      <div class="card">
+        <h2>Certificate Verification</h2>
+
+        {% if verification.is_revoked %}
+          <p class="muted">
+            This certificate verification has been revoked.
+            Please contact the barangay office for assistance.
+          </p>
+        {% else %}
+          <p>
+            Scan the QR code below to verify this completed request.
+          </p>
+
+          <div style="text-align: center; padding: 16px 0;">
+            <img
+              src="/verify/{{ verification.verification_token }}/qr.png"
+              alt="Certificate verification QR code"
+              width="220"
+              height="220"
+              style="max-width: 100%; height: auto;"
+            >
+
+            <p>
+              <strong>Request Reference:</strong><br>
+              {{ r.reference_no }}
+            </p>
+
+            <p>
+              <a
+                class="btn"
+                href="/verify/{{ verification.verification_token }}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Verify Certificate
+              </a>
+            </p>
+
+            <button
+              class="btn secondary noprint"
+              type="button"
+              onclick="window.print()"
+            >
+              Print Request
+            </button>
+          </div>
+
+          <p class="muted small">
+            The QR code opens the certificate verification page.
+            Anyone checking the certificate should confirm that the
+            verification result is valid.
+          </p>
+        {% endif %}
+      </div>
+    {% elif r.status == 'Completed' %}
+      <div class="card">
+        <h2>Certificate Verification</h2>
+        <p class="muted">
+          No verification record is available for this request yet.
+          Please contact the barangay staff.
+        </p>
+      </div>
+    {% endif %}
+
     <div class="card">
       <h2>Status history</h2>
+
       <ul class="timeline">
-      {% for h in history %}
-        <li>{{ badge(h.status) }} <span class="muted small">{{ h.changed_at|dt }}{% if h.who %} &middot; {{ h.who }}{% endif %}</span>
-          {% if h.remarks %}<br>{{ h.remarks }}{% endif %}</li>
-      {% endfor %}
+        {% for h in history %}
+          <li>
+            {{ badge(h.status) }}
+            <span class="muted small">
+              {{ h.changed_at|dt }}
+              {% if h.who %}&middot; {{ h.who }}{% endif %}
+            </span>
+
+            {% if h.remarks %}
+              <br>{{ h.remarks }}
+            {% endif %}
+          </li>
+        {% endfor %}
       </ul>
     </div>
   </div>

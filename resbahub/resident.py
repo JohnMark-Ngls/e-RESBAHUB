@@ -1,3 +1,4 @@
+
 """Resident-facing pages: dashboard, profile, barangay requests, tracking, announcements,
 notifications, and the shared request-detail / document-download pages."""
 
@@ -94,7 +95,9 @@ def dashboard():
         LIMIT 3
         """
     )
+
     on_site_personnel = get_on_site_personnel()
+
     available_medicines = db.query(
         """
         SELECT name
@@ -500,6 +503,7 @@ def _load_request(request_id):
 @bp.route("/requests/<int:request_id>")
 @login_required
 def request_detail(request_id):
+    """Display request details and QR verification when completed."""
     row = _load_request(request_id)
 
     docs = db.query(
@@ -520,6 +524,20 @@ def request_detail(request_id):
 
     is_staff = g.user["role"] in ("barangay_staff", "admin")
 
+    verification = None
+
+    if row["status"] == "Completed":
+        verification = db.query(
+            """
+            SELECT verification_token, issued_at, is_revoked
+            FROM certificate_verifications
+            WHERE request_id = ?
+            LIMIT 1
+            """,
+            (request_id,),
+            one=True,
+        )
+
     return render_template(
         "resident/request_detail.html",
         r=row,
@@ -527,6 +545,7 @@ def request_detail(request_id):
         history=history,
         is_staff=is_staff,
         next_statuses=REQUEST_TRANSITIONS[row["status"]],
+        verification=verification,
     )
 
 
@@ -657,6 +676,7 @@ def medicine():
         "resident/medicine.html",
         medicines=medicines,
     )
+
 
 @bp.route("/notifications")
 @roles_required("resident", admin=False)

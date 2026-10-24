@@ -1,4 +1,3 @@
-
 """Database helpers for e-RESBAHUB using MariaDB."""
 
 import mysql.connector
@@ -89,15 +88,17 @@ def init_db():
     cursor = conn.cursor()
 
     try:
+        # Check that the selected database already has its base schema.
         cursor.execute("SHOW TABLES")
         tables = cursor.fetchall()
 
         if not tables:
             raise RuntimeError(
-                "No tables found in the eresbahub database. "
-                "Import the schema using phpMyAdmin first."
+                "No tables found in the configured database. "
+                "Import the e-RESBAHUB schema using phpMyAdmin first."
             )
 
+        # Medicine inventory table.
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS medicine_inventory (
@@ -117,22 +118,27 @@ def init_db():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             """
         )
+
+        # Add newer medicine columns to an existing installation.
         medicine_columns = (
             ("condition_name", "VARCHAR(120) NULL"),
             ("strength", "VARCHAR(60) NULL"),
             ("form", "VARCHAR(20) NULL"),
             ("description", "VARCHAR(255) NULL"),
         )
+
         for column, definition in medicine_columns:
             cursor.execute(
                 f"SHOW COLUMNS FROM medicine_inventory LIKE '{column}'"
             )
+
             if cursor.fetchone() is None:
                 cursor.execute(
                     f"ALTER TABLE medicine_inventory "
                     f"ADD COLUMN {column} {definition}"
                 )
 
+        # Staff presence table.
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS staff_presence (
@@ -145,11 +151,48 @@ def init_db():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             """
         )
+
+        # Add position_title to older users tables if missing.
         cursor.execute("SHOW COLUMNS FROM users LIKE 'position_title'")
+
         if cursor.fetchone() is None:
             cursor.execute(
                 "ALTER TABLE users ADD COLUMN position_title VARCHAR(100) NULL"
             )
+
+        # QR certificate verification table.
+        #
+        # NOTE:
+        # request_id and issued_by must use the same column types as
+        # requests.id and users.id in your existing database.
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS certificate_verifications (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                request_id INT UNSIGNED NOT NULL UNIQUE,
+                verification_token VARCHAR(100) NOT NULL UNIQUE,
+                issued_by INT UNSIGNED NULL,
+                issued_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                is_revoked TINYINT(1) NOT NULL DEFAULT 0,
+                revoked_at DATETIME NULL,
+                INDEX idx_cv_token (verification_token),
+                CONSTRAINT fk_cv_request
+                    FOREIGN KEY (request_id)
+                    REFERENCES requests(id)
+                    ON DELETE CASCADE,
+                CONSTRAINT fk_cv_issuer
+                    FOREIGN KEY (issued_by)
+                    REFERENCES users(id)
+                    ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            """
+        )
+
         conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
+
     finally:
         cursor.close()

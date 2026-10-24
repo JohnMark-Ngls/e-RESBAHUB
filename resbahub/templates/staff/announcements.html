@@ -1,30 +1,334 @@
 {% extends 'base.html' %}
 {% from '_macros.html' import csrf, input, textarea, select %}
+
 {% block title %}Manage announcements{% endblock %}
+
 {% block content %}
+
+<style>
+  .announcement-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr);
+    gap: 22px;
+    align-items: start;
+  }
+
+  .announcement-card,
+  .calendar-card {
+    background: rgba(255, 255, 255, 0.97);
+    border: 1px solid #dce5dd;
+    border-radius: 14px;
+    padding: 22px;
+    box-shadow: 0 5px 18px rgba(30, 60, 40, 0.07);
+    min-width: 0;
+  }
+
+  .announcement-card h2,
+  .calendar-card h2 {
+    margin: 0 0 8px;
+    color: #234c39;
+  }
+
+  .section-description {
+    color: #69776d;
+    font-size: 14px;
+    margin: 0 0 20px;
+  }
+
+  .announcement-date-field {
+    margin-bottom: 18px;
+  }
+
+  .announcement-date-field label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .announcement-date-field input {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid #ccd8cf;
+    border-radius: 8px;
+    font: inherit;
+    background: white;
+    box-sizing: border-box;
+  }
+
+  .announcement-date-field input:focus {
+    outline: 2px solid #7aa38b;
+    outline-offset: 1px;
+  }
+
+  .selected-date-preview {
+    background: #edf5ef;
+    border-left: 4px solid #527b62;
+    border-radius: 7px;
+    padding: 12px 14px;
+    margin: 12px 0 20px;
+  }
+
+  .selected-date-preview .date-day {
+    display: block;
+    color: #234c39;
+    font-size: 21px;
+    font-weight: 800;
+  }
+
+  .selected-date-preview .date-full {
+    color: #52685a;
+    font-size: 13px;
+    margin-top: 3px;
+  }
+
+  .calendar-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 16px 0;
+  }
+
+  .calendar-heading strong {
+    color: #234c39;
+    font-size: 16px;
+    text-align: center;
+  }
+
+  .calendar-nav {
+    flex-shrink: 0;
+    border: 1px solid #d4e0d7;
+    background: #f4f8f5;
+    color: #28523c;
+    border-radius: 7px;
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+    font-size: 20px;
+  }
+
+  .calendar-nav:hover {
+    background: #e2eee5;
+  }
+
+  .calendar-weekdays,
+  .calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .calendar-weekdays span {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: #647469;
+    padding: 7px 0;
+  }
+
+  .calendar-day {
+    min-width: 0;
+    min-height: 34px;
+    aspect-ratio: 1;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: #25372b;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .calendar-day:hover {
+    background: #edf5ef;
+    border-color: #b6cdbb;
+  }
+
+  .calendar-day.today {
+    border-color: #527b62;
+    font-weight: 800;
+  }
+
+  .calendar-day.selected {
+    background: #527b62;
+    color: white;
+    font-weight: 800;
+  }
+
+  .calendar-day:focus-visible,
+  .calendar-nav:focus-visible {
+    outline: 2px solid #234c39;
+    outline-offset: 2px;
+  }
+
+  .calendar-legend,
+  .publish-hint {
+    margin-top: 12px;
+    color: #68766c;
+    font-size: 12px;
+  }
+
+  .announcement-list {
+    margin-top: 24px;
+  }
+
+  .announcement-list .card {
+    background: rgba(255, 255, 255, 0.97);
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+
+  @media (max-width: 800px) {
+    .announcement-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .calendar-card {
+      grid-row: 1;
+    }
+  }
+</style>
+
 <h1>Announcements</h1>
-<div class="card">
-  <h2>Publish new announcement</h2>
-  <form method="post">
-    {{ csrf() }}
-    <div class="form-grid">
-      {{ input('title', 'Title', form.title, required=True, attrs='maxlength="120"') }}
-      {{ select('category', 'Category', categories, form.category, required=True) }}
-      {{ textarea('body', 'Message', form.body, required=True, cls='full', rows=4) }}
-    </div>
-    <button class="btn" type="submit">Publish</button>
-  </form>
-</div>
-{% for a in rows %}
-<div class="card">
-  <div class="row spread">
-    <span><span class="badge {{ a.category }}">{{ a.category }}</span> <strong>{{ a.title }}</strong></span>
-    <form method="post" action="{{ url_for('staff.delete_announcement', ann_id=a.id) }}" data-confirm="Delete this announcement?">
-      {{ csrf() }}<button class="btn danger sm" type="submit">Delete</button>
+
+<div class="announcement-layout">
+
+  <!-- ANNOUNCEMENT FORM -->
+  <section class="announcement-card">
+    <h2>Publish new announcement</h2>
+
+    <p class="section-description">
+      Fill in the details and choose the announcement date.
+    </p>
+
+    <form method="post" id="announcementForm">
+      {{ csrf() }}
+
+      <div class="form-grid">
+        {{ input('title', 'Title', form.title, required=True, attrs='maxlength="120"') }}
+
+        {{ select('category', 'Category', categories, form.category, required=True) }}
+      </div>
+
+      <div class="announcement-date-field">
+        <label for="announcement_date">
+          Announcement date <span aria-hidden="true">*</span>
+        </label>
+
+        <input
+          type="date"
+          id="announcement_date"
+          name="announcement_date"
+          required
+          aria-describedby="dateHelp"
+        >
+
+        <div id="dateHelp" class="publish-hint">
+          Select a date using the calendar on the right or the date picker.
+        </div>
+
+        <div class="selected-date-preview" aria-live="polite">
+          <span class="date-day" id="selectedWeekday">
+            Choose a date
+          </span>
+
+          <div class="date-full" id="selectedFullDate">
+            Your selected date will appear here.
+          </div>
+        </div>
+      </div>
+
+      {{ textarea('body', 'Message', form.body, required=True, cls='full', rows=5) }}
+
+      <button class="btn" type="submit">Publish</button>
+
+      <p class="publish-hint">
+        Review the title, date, category, and message before publishing.
+      </p>
     </form>
-  </div>
-  <p style="white-space:pre-line">{{ a.body }}</p>
-  <div class="muted small">{{ a.created_at|dt }}{% if a.author %} &middot; {{ a.author }}{% endif %}</div>
+  </section>
+
+  <!-- INTERACTIVE CALENDAR -->
+  <aside class="calendar-card">
+    <h2>Announcement Calendar</h2>
+
+    <p class="section-description">
+      Click any day to select its date automatically.
+    </p>
+
+    <div class="calendar-heading">
+      <button
+        type="button"
+        class="calendar-nav"
+        id="previousMonth"
+        aria-label="Previous month"
+      >&#8249;</button>
+
+      <strong id="calendarMonthYear">Calendar loading...</strong>
+
+      <button
+        type="button"
+        class="calendar-nav"
+        id="nextMonth"
+        aria-label="Next month"
+      >&#8250;</button>
+    </div>
+
+    <div class="calendar-weekdays" aria-hidden="true">
+      <span>Sun</span>
+      <span>Mon</span>
+      <span>Tue</span>
+      <span>Wed</span>
+      <span>Thu</span>
+      <span>Fri</span>
+      <span>Sat</span>
+    </div>
+
+    <div class="calendar-days" id="calendarDays"></div>
+
+    <div class="calendar-legend">
+      Today's date has an outline. Your selected date is highlighted in green.
+    </div>
+  </aside>
+
 </div>
-{% endfor %}
+
+<!-- EXISTING ANNOUNCEMENTS -->
+<div class="announcement-list">
+  {% for a in rows %}
+  <div class="card">
+    <div class="row spread">
+      <span>
+        <span class="badge {{ a.category }}">{{ a.category }}</span>
+        <strong>{{ a.title }}</strong>
+      </span>
+
+      <form
+        method="post"
+        action="{{ url_for('staff.delete_announcement', ann_id=a.id) }}"
+        data-confirm="Delete this announcement?"
+      >
+        {{ csrf() }}
+        <button class="btn danger sm" type="submit">Delete</button>
+      </form>
+    </div>
+
+    <p style="white-space:pre-line">{{ a.body }}</p>
+
+    <div class="muted small">
+      {{ a.created_at|dt }}
+      {% if a.author %} &middot; {{ a.author }}{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Load calendar JavaScript from the static folder -->
+<script
+  src="{{ url_for('static', filename='js/announcement_calendar.js') }}"
+  defer
+></script>
+
 {% endblock %}

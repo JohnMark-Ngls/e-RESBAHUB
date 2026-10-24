@@ -1,5 +1,7 @@
 """Barangay personnel: dashboard, request processing, resident verification, announcements."""
 
+import secrets
+
 from flask import (
     Blueprint,
     abort,
@@ -146,13 +148,16 @@ def update_request(request_id):
             f"A {row['status']} request cannot be changed to '{new_status}'.",
             "danger",
         )
+
     elif new_status == "Rejected" and not remarks:
         flash(
             "Please write a remark explaining why the request is rejected.",
             "danger",
         )
+
     elif len(remarks) > 500:
         flash("Remarks are too long (max 500 characters).", "danger")
+
     else:
         conn = db.get_db()
         cursor = conn.cursor()
@@ -209,11 +214,46 @@ def update_request(request_id):
                 commit=False,
             )
 
+            # QR VERIFICATION:
+            # Create a verification token when a request becomes Completed.
+            # Check first so the request cannot receive duplicate records.
+            if new_status == "Completed":
+                cursor.execute(
+                    """
+                    SELECT id
+                    FROM certificate_verifications
+                    WHERE request_id = %s
+                    LIMIT 1
+                    """,
+                    (request_id,),
+                )
+
+                existing_verification = cursor.fetchone()
+
+                if existing_verification is None:
+                    verification_token = secrets.token_urlsafe(32)
+
+                    cursor.execute(
+                        """
+                        INSERT INTO certificate_verifications
+                            (request_id, verification_token, issued_by)
+                        VALUES (%s, %s, %s)
+                        """,
+                        (
+                            request_id,
+                            verification_token,
+                            g.user["id"],
+                        ),
+                    )
+
+            # Save the request update, history, notification,
+            # audit log, and verification record together.
             conn.commit()
 
         except Exception:
             conn.rollback()
             raise
+
         finally:
             cursor.close()
 
@@ -225,6 +265,7 @@ def update_request(request_id):
 
 
 # ------------------------------------------------------------------ residents
+
 
 @bp.route("/residents")
 @roles_required(*BARANGAY)
@@ -300,6 +341,7 @@ def resident_edit(resident_id):
                 flash(error, "danger")
 
             form.update(data)
+
         else:
             verify = 1 if request.form.get("is_verified") else 0
             conn = db.get_db()
@@ -410,6 +452,7 @@ def resident_edit(resident_id):
             except Exception:
                 conn.rollback()
                 raise
+
             finally:
                 cursor.close()
 
@@ -433,6 +476,7 @@ def resident_edit(resident_id):
 
 
 # -------------------------------------------------------------- announcements
+
 
 @bp.route("/announcements", methods=["GET", "POST"])
 @roles_required(*BARANGAY)
@@ -460,6 +504,7 @@ def announcements():
         if errors:
             for error in errors:
                 flash(error, "danger")
+
         else:
             db.execute(
                 """

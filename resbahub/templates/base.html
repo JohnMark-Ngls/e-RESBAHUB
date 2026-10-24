@@ -1,80 +1,1344 @@
-<!doctype html>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <title>{% block title %}e-RESBAHUB{% endblock %} | e-RESBAHUB</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+  <link rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}">
+
+  <style>
+    :root {
+      --sidebar-bg: #123d30;
+      --sidebar-hover: #285744;
+      --sidebar-active: #32694d;
+      --sidebar-text: #f4f8f5;
+      --page-bg: #f4f7f5;
+      --text-main: #174b3d;
+      --border-color: #dce6df;
+      --sidebar-width: 280px;
+      --surface: #ffffff;
+      --muted: #708078;
+      --shadow: 0 10px 28px rgba(19, 48, 35, .15);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--page-bg);
+      color: #253a30;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .sidebar-toggle-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    /* SIDEBAR */
+    .app-sidebar {
+      width: var(--sidebar-width);
+      flex: 0 0 var(--sidebar-width);
+      min-height: 100vh;
+      background: var(--sidebar-bg);
+      color: var(--sidebar-text);
+      display: flex;
+      flex-direction: column;
+      padding: 22px 14px 16px;
+      transition: width .25s ease, flex-basis .25s ease;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 0 7px 24px;
+      text-decoration: none;
+      color: white;
+      min-width: 0;
+    }
+
+    .sidebar-logo {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: white;
+    }
+
+    .sidebar-brand-text {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+      line-height: 1.3;
+    }
+
+    .sidebar-barangay {
+      font-size: 12px;
+      font-weight: 700;
+      color: #e5efe8;
+    }
+
+    .sidebar-system-name {
+      font-size: 20px;
+      font-weight: 800;
+      color: white;
+    }
+
+    .sidebar-subtitle {
+      font-size: 11px;
+      color: #d2e1d7;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      flex: 1;
+    }
+
+    .sidebar-nav a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-height: 44px;
+      padding: 11px 13px;
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--sidebar-text);
+      font-size: 14px;
+      font-weight: 600;
+      transition: background .18s ease;
+    }
+
+    .sidebar-nav a:hover,
+    .sidebar-nav a:focus-visible {
+      background: var(--sidebar-hover);
+      color: white;
+    }
+
+    .sidebar-nav a.active {
+      background: var(--sidebar-active);
+      color: white;
+      box-shadow: inset 3px 0 #d5eadb;
+    }
+
+    .nav-icon {
+      width: 21px;
+      height: 21px;
+      flex: 0 0 21px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .badge-count {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-width: 19px;
+      height: 19px;
+      padding: 0 5px;
+      margin-left: auto;
+      border-radius: 20px;
+      background: #e5a34d;
+      color: #243b2e;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    /* SIDEBAR ACCOUNT */
+    .sidebar-account {
+      border-top: 1px solid rgba(255,255,255,.25);
+      padding: 18px 7px 0;
+      margin-top: 20px;
+    }
+
+    .sidebar-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      min-width: 0;
+    }
+
+    .sidebar-avatar {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #668574;
+      color: white;
+      font-size: 19px;
+      font-weight: 800;
+    }
+
+    .sidebar-user-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+
+    .sidebar-user-info strong {
+      color: white;
+      font-size: 13px;
+    }
+
+    .sidebar-user-info small {
+      color: #d6e4db;
+      font-size: 12px;
+    }
+
+    .sidebar-account a,
+    .sidebar-logout button {
+      color: #f4f8f5;
+      text-decoration: none;
+      font: inherit;
+      font-size: 13px;
+    }
+
+    .sidebar-account a:hover,
+    .sidebar-logout button:hover {
+      text-decoration: underline;
+    }
+
+    .sidebar-account-links {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .sidebar-logout {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-logout button {
+      background: none;
+      border: 0;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    /* WORKSPACE */
+    .app-workspace {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .workspace-topbar {
+      min-height: 62px;
+      padding: 10px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border-color);
+      position: relative;
+      z-index: 20;
+    }
+
+    .workspace-menu {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      flex-shrink: 0;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--sidebar-bg);
+      font-size: 23px;
+      cursor: pointer;
+    }
+
+    .workspace-menu:hover {
+      background: #edf3ee;
+    }
+
+    /* PROFILE DROPDOWN */
+    .profile-menu {
+      position: relative;
+      margin-left: auto;
+    }
+
+    .profile-trigger {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 8px;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--text-main);
+      cursor: pointer;
+      text-align: left;
+      max-width: min(360px, 65vw);
+    }
+
+    .profile-trigger:hover,
+    .profile-trigger[aria-expanded="true"] {
+      background: #f0f5f1;
+      border-color: #e0e9e2;
+    }
+
+    .profile-trigger-info {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .profile-trigger-info strong {
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .profile-trigger-info small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .profile-trigger-arrow {
+      font-size: 13px;
+      margin-left: 4px;
+      transition: transform .2s ease;
+    }
+
+    .profile-trigger[aria-expanded="true"] .profile-trigger-arrow {
+      transform: rotate(180deg);
+    }
+
+    .profile-avatar {
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #e4eee7;
+      color: #205640;
+      font-size: 20px;
+      overflow: hidden;
+    }
+
+    /* DROPDOWN PANEL */
+    .profile-dropdown {
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      width: 285px;
+      max-width: calc(100vw - 24px);
+      padding: 8px;
+      border: 1px solid #e2e8e3;
+      border-radius: 13px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      display: none;
+      color: #202d26;
+      z-index: 1000;
+    }
+
+    .profile-dropdown.open {
+      display: block;
+    }
+
+    .dropdown-account {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 12px 10px;
+      margin-bottom: 7px;
+      border-radius: 9px;
+      background: #eef5f0;
+    }
+
+    .dropdown-account .profile-avatar {
+      width: 43px;
+      height: 43px;
+      flex-basis: 43px;
+    }
+
+    .dropdown-account-info {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      min-width: 0;
+    }
+
+    .dropdown-account-info strong {
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .dropdown-account-info small {
+      color: #63776a;
+      font-size: 12px;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      margin: 7px 2px;
+      background: #e4e9e5;
+    }
+
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      min-height: 43px;
+      padding: 10px 11px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: #25352c;
+      text-decoration: none;
+      text-align: left;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .dropdown-item:hover,
+    .dropdown-item:focus-visible {
+      background: #f0f4f1;
+      outline: none;
+    }
+
+    .dropdown-icon {
+      width: 25px;
+      height: 25px;
+      flex: 0 0 25px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      background: #e8eeea;
+      font-size: 15px;
+    }
+
+    .dropdown-item-text {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .dropdown-item-text small {
+      color: #718078;
+      font-size: 11px;
+    }
+
+    .dropdown-logout {
+      color: #b42318;
+    }
+
+    .dropdown-logout .dropdown-icon {
+      background: #fcebea;
+    }
+
+    .profile-dropdown form {
+      margin: 0;
+    }
+
+    .profile-dropdown form .dropdown-item {
+      width: 100%;
+    }
+
+    /* DARK MODE COLORS */
+    body.dark-mode {
+      --page-bg: #111a16;
+      --surface: #1c2922;
+      --text-main: #e0eee5;
+      --border-color: #34473b;
+      --muted: #b9cdbf;
+      color: #e8f3ec;
+      background: var(--page-bg);
+    }
+
+    body.dark-mode .app-workspace,
+    body.dark-mode main.page-content.container {
+      background: var(--page-bg);
+      color: #e8f3ec;
+    }
+
+    body.dark-mode .workspace-topbar,
+    body.dark-mode .app-footer {
+      background: var(--surface);
+      color: #e8f3ec;
+      border-color: var(--border-color);
+    }
+
+    body.dark-mode .workspace-menu,
+    body.dark-mode .profile-trigger,
+    body.dark-mode .profile-trigger-info strong {
+      color: #e8f3ec;
+    }
+
+    body.dark-mode .profile-trigger-info small {
+      color: #b9cdbf;
+    }
+
+    body.dark-mode .profile-trigger:hover,
+    body.dark-mode .profile-trigger[aria-expanded="true"],
+    body.dark-mode .workspace-menu:hover {
+      background: #2a3b30;
+      border-color: #405448;
+    }
+
+    body.dark-mode .profile-dropdown {
+      background: #1c2922;
+      border-color: #405448;
+      color: #e8f3ec;
+    }
+
+    body.dark-mode .dropdown-account {
+      background: #263a2d;
+    }
+
+    body.dark-mode .dropdown-account-info strong,
+    body.dark-mode .dropdown-item,
+    body.dark-mode .dropdown-item-text span {
+      color: #e8f3ec;
+    }
+
+    body.dark-mode .dropdown-account-info small,
+    body.dark-mode .dropdown-item-text small {
+      color: #c0d2c6;
+    }
+
+    body.dark-mode .dropdown-item:hover,
+    body.dark-mode .dropdown-item:focus-visible {
+      background: #2a3b30;
+    }
+
+    body.dark-mode .dropdown-divider {
+      background: #405448;
+    }
+
+    body.dark-mode .dropdown-icon {
+      background: #304438;
+    }
+
+    body.dark-mode .dropdown-logout,
+    body.dark-mode .dropdown-logout .dropdown-item-text span {
+      color: #ffaaa3;
+    }
+
+    body.dark-mode .app-footer {
+      color: #c0d2c6;
+    }
+
+    /* DARK MODE: HEADINGS AND GENERAL TEXT */
+    body.dark-mode h1,
+    body.dark-mode h2,
+    body.dark-mode h3,
+    body.dark-mode h4,
+    body.dark-mode h5,
+    body.dark-mode h6,
+    body.dark-mode main p,
+    body.dark-mode main label,
+    body.dark-mode main li,
+    body.dark-mode main dt,
+    body.dark-mode main dd,
+    body.dark-mode main legend,
+    body.dark-mode main caption {
+      color: #e8f3ec;
+    }
+
+    body.dark-mode .page-content > h1:first-child {
+      color: #a7d7b6;
+    }
+
+    body.dark-mode main small,
+    body.dark-mode main .text-muted,
+    body.dark-mode main .muted,
+    body.dark-mode main .help-text,
+    body.dark-mode main .form-text {
+      color: #c0d2c6;
+    }
+
+    /* DARK MODE: LINKS */
+    body.dark-mode main a:not(.dropdown-item) {
+      color: #80cfff;
+    }
+
+    body.dark-mode main a:not(.dropdown-item):hover {
+      color: #c0e8ff;
+    }
+
+    /* DARK MODE: INPUTS */
+    body.dark-mode main input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+    body.dark-mode main select,
+    body.dark-mode main textarea {
+      background-color: #202e26;
+      color: #f0f7f2;
+      border-color: #53695b;
+    }
+
+    body.dark-mode main input::placeholder,
+    body.dark-mode main textarea::placeholder {
+      color: #b9cdbf;
+      opacity: 1;
+    }
+
+    body.dark-mode main input:focus,
+    body.dark-mode main select:focus,
+    body.dark-mode main textarea:focus {
+      border-color: #8fd5a8;
+      outline-color: #8fd5a8;
+    }
+
+    /* DARK MODE: TABLES */
+    body.dark-mode main table {
+      width: 100%;
+      color: #e8f3ec;
+      border-color: #405448;
+      border-collapse: collapse;
+    }
+
+    body.dark-mode main table thead th,
+    body.dark-mode main table th {
+      background-color: #294234;
+      color: #ffffff;
+      border-color: #405448;
+    }
+
+    body.dark-mode main table tbody tr,
+    body.dark-mode main table tbody tr:nth-child(even),
+    body.dark-mode main table tbody tr:nth-child(odd) {
+      background-color: #192820;
+      color: #f1f5f2;
+    }
+
+    body.dark-mode main table tbody td {
+      background-color: transparent;
+      color: #f1f5f2;
+      border-color: #405649;
+    }
+
+    body.dark-mode main table tbody tr:hover {
+      background-color: #293b2f;
+    }
+
+    body.dark-mode main table tbody td a {
+      color: #80cfff;
+    }
+
+    body.dark-mode main table tbody td a:hover {
+      color: #c0e8ff;
+      text-decoration: underline;
+    }
+
+    /* DARK MODE: CARDS AND PANELS */
+    body.dark-mode main .card,
+    body.dark-mode main .panel,
+    body.dark-mode main .modal-content,
+    body.dark-mode main .list-group-item,
+    body.dark-mode main .dropdown-menu {
+      background-color: #1c2922;
+      color: #e8f3ec;
+      border-color: #405448;
+    }
+
+    /* DARK MODE: BUTTONS */
+    body.dark-mode main button,
+    body.dark-mode main input[type="submit"],
+    body.dark-mode main input[type="button"] {
+      color: #f0f7f2;
+    }
+
+    body.dark-mode main button:disabled,
+    body.dark-mode main input:disabled,
+    body.dark-mode main select:disabled,
+    body.dark-mode main textarea:disabled {
+      color: #aabbb0;
+      opacity: .8;
+    }
+
+    /* DARK MODE: FLASH / VERIFICATION MESSAGES */
+    body.dark-mode main .flash,
+    body.dark-mode main .alert,
+    body.dark-mode main .notice,
+    body.dark-mode main .verification-notice {
+      background-color: #263b30;
+      color: #f1f5f2;
+      border-color: #527461;
+    }
+
+    body.dark-mode main .flash *,
+    body.dark-mode main .alert *,
+    body.dark-mode main .notice *,
+    body.dark-mode main .verification-notice * {
+      color: inherit;
+    }
+
+    body.dark-mode main .flash.success,
+    body.dark-mode main .alert-success {
+      background-color: #173d2b;
+      color: #aaf0c1;
+      border-color: #3c8059;
+    }
+
+    body.dark-mode main .flash.danger,
+    body.dark-mode main .flash.error,
+    body.dark-mode main .alert-danger {
+      background-color: #482522;
+      color: #ffc1bb;
+      border-color: #8b4a43;
+    }
+
+    body.dark-mode main .flash.warning,
+    body.dark-mode main .alert-warning {
+      background-color: #44371b;
+      color: #ffe3a0;
+      border-color: #80672f;
+    }
+
+    body.dark-mode main .flash.info,
+    body.dark-mode main .alert-info {
+      background-color: #1d3547;
+      color: #b8e3ff;
+      border-color: #426b87;
+    }
+
+    /* DARK MODE: REQUEST STATUS BADGES */
+    body.dark-mode main .badge,
+    body.dark-mode main .status,
+    body.dark-mode main .status-badge {
+      font-weight: 700;
+    }
+
+    /* Rejected: light pink with dark red text */
+    body.dark-mode main .badge.rejected,
+    body.dark-mode main .status.rejected,
+    body.dark-mode main .status-badge.rejected {
+      background-color: #f8e8e6;
+      color: #922f2a;
+    }
+
+    /* Completed: light green with dark green text */
+    body.dark-mode main .badge.completed,
+    body.dark-mode main .status.completed,
+    body.dark-mode main .status-badge.completed {
+      background-color: #e0eee5;
+      color: #175b38;
+    }
+
+    /* Other common status badge names */
+    body.dark-mode main .badge.pending,
+    body.dark-mode main .status.pending,
+    body.dark-mode main .status-badge.pending {
+      background-color: #fff0c2;
+      color: #684900;
+    }
+
+    body.dark-mode main .badge.approved,
+    body.dark-mode main .status.approved,
+    body.dark-mode main .status-badge.approved {
+      background-color: #dcecff;
+      color: #164b82;
+    }
+
+    /* PAGE CONTENT */
+    main.page-content.container {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 25px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .page-content > h1:first-child {
+      color: var(--text-main);
+    }
+
+    .app-footer {
+      padding: 15px 25px;
+      text-align: center;
+      color: #738176;
+      font-size: 12px;
+      border-top: 1px solid var(--border-color);
+      background: var(--surface);
+    }
+
+    /* COLLAPSED SIDEBAR */
+    #sidebar-toggle:checked ~ .app-layout .app-sidebar {
+      width: 78px;
+      flex-basis: 78px;
+      padding-left: 10px;
+      padding-right: 10px;
+    }
+
+    #sidebar-toggle:checked ~ .app-layout .sidebar-brand {
+      justify-content: center;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    #sidebar-toggle:checked ~ .app-layout .sidebar-brand-text,
+    #sidebar-toggle:checked ~ .app-layout .sidebar-nav .nav-label,
+    #sidebar-toggle:checked ~ .app-layout .sidebar-user-info,
+    #sidebar-toggle:checked ~ .app-layout .sidebar-logout .logout-label,
+    #sidebar-toggle:checked ~ .app-layout .sidebar-account .password-link {
+      display: none;
+    }
+
+    #sidebar-toggle:checked ~ .app-layout .sidebar-nav a {
+      justify-content: center;
+      padding-left: 5px;
+      padding-right: 5px;
+    }
+
+    #sidebar-toggle:checked ~ .app-layout .sidebar-account {
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    #sidebar-toggle:checked ~ .app-layout .sidebar-user,
+    #sidebar-toggle:checked ~ .app-layout .sidebar-logout {
+      justify-content: center;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .app-sidebar {
+        width: 250px;
+        flex-basis: 250px;
+      }
+
+      .workspace-topbar {
+        padding: 9px 12px;
+      }
+
+      main.page-content.container {
+        padding: 16px;
+      }
+
+      .profile-trigger {
+        gap: 7px;
+        padding: 4px;
+      }
+
+      .profile-trigger-info strong {
+        max-width: 135px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .profile-dropdown {
+        width: 275px;
+      }
+
+      #sidebar-toggle:not(:checked) ~ .app-layout .app-sidebar {
+        width: 0;
+        flex-basis: 0;
+        padding-left: 0;
+        padding-right: 0;
+        overflow: hidden;
+      }
+
+      #sidebar-toggle:checked ~ .app-layout .app-sidebar {
+        width: 250px;
+        flex-basis: 250px;
+        padding: 18px 12px;
+      }
+
+      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-brand-text,
+      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-nav .nav-label,
+      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-user-info,
+      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-logout .logout-label,
+      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-account .password-link {
+        display: none;
+      }
+
+      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-nav a {
+        justify-content: center;
+        padding-left: 5px;
+        padding-right: 5px;
+      }
+
+      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-brand {
+        justify-content: center;
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-account {
+        padding-left: 0;
+        padding-right: 0;
+      }
+
+      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-user,
+      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-logout {
+        justify-content: center;
+      }
+
+      #sidebar-toggle:checked ~ .app-layout .sidebar-brand-text,
+      #sidebar-toggle:checked ~ .app-layout .sidebar-nav .nav-label,
+      #sidebar-toggle:checked ~ .app-layout .sidebar-user-info,
+      #sidebar-toggle:checked ~ .app-layout .sidebar-logout .logout-label,
+      #sidebar-toggle:checked ~ .app-layout .sidebar-account .password-link {
+        display: initial;
+      }
+
+      #sidebar-toggle:checked ~ .app-layout .sidebar-nav a {
+        justify-content: flex-start;
+        padding: 11px 13px;
+      }
+
+      #sidebar-toggle:checked ~ .app-layout .sidebar-brand {
+        justify-content: flex-start;
+        padding: 0 7px 24px;
+      }
+
+      #sidebar-toggle:checked ~ .app-layout .sidebar-account {
+        padding: 18px 7px 0;
+      }
+
+      #sidebar-toggle:checked ~ .app-layout .sidebar-user,
+      #sidebar-toggle:checked ~ .app-layout .sidebar-logout {
+        justify-content: flex-start;
+      }
+    }
+
+    
+/* DARK MODE: FIX FORM BUTTON READABILITY */
+body.dark-mode button,
+body.dark-mode input[type="submit"],
+body.dark-mode input[type="button"],
+body.dark-mode input[type="reset"],
+body.dark-mode a.button {
+    color: #ffffff;
+}
+
+/* Submit request button */
+body.dark-mode button[type="submit"],
+body.dark-mode input[type="submit"] {
+    background-color: #527765;
+    color: #ffffff;
+    border: 1px solid #719582;
+}
+
+/* Cancel button: common class names */
+body.dark-mode button.cancel,
+body.dark-mode a.cancel,
+body.dark-mode .btn-cancel,
+body.dark-mode .cancel-button,
+body.dark-mode button[type="button"].cancel,
+body.dark-mode a.btn-cancel {
+    background-color: #303b35;
+    color: #ffffff;
+    border: 1px solid #718078;
+}
+
+/* Cancel button: fallback for buttons inside forms
+   that use a secondary button style */
+body.dark-mode button.secondary,
+body.dark-mode a.secondary,
+body.dark-mode .btn-secondary {
+    background-color: #303b35;
+    color: #ffffff;
+    border: 1px solid #718078;
+}
+
+/* Hover effect */
+body.dark-mode button[type="submit"]:hover,
+body.dark-mode input[type="submit"]:hover {
+    background-color: #648b76;
+    color: #ffffff;
+}
+
+body.dark-mode button.cancel:hover,
+body.dark-mode a.cancel:hover,
+body.dark-mode .btn-cancel:hover,
+body.dark-mode .cancel-button:hover,
+body.dark-mode button.secondary:hover,
+body.dark-mode a.secondary:hover,
+body.dark-mode .btn-secondary:hover {
+    background-color: #46554b;
+    color: #ffffff;
+}
+
+/* Disabled buttons */
+body.dark-mode button:disabled,
+body.dark-mode input:disabled {
+    color: #d0d8d3;
+    opacity: 0.8;
+}
+
+/* Dark mode: ensure form text remains readable */
+body.dark-mode main form,
+body.dark-mode main form label,
+body.dark-mode main form p,
+body.dark-mode main form span,
+body.dark-mode main form legend {
+    color: #e8f3ec;
+}
+
+/* Keep placeholder text visible */
+body.dark-mode main input::placeholder,
+body.dark-mode main textarea::placeholder {
+    color: #b9cdbf;
+    opacity: 1;
+}
+
+/* Focus state for accessibility */
+body.dark-mode main button:focus-visible,
+body.dark-mode main input:focus-visible,
+body.dark-mode main select:focus-visible,
+body.dark-mode main textarea:focus-visible,
+body.dark-mode main a:focus-visible {
+    outline: 2px solid #8fd5a8;
+    outline-offset: 2px;
+}
+
+  </style>
 </head>
+
 <body class="{% block body_class %}{% endblock %}">
-<header class="topbar">
-  <div class="inner">
-    <a class="brand" href="{{ url_for('auth.home') }}">
-      <img class="brand-logo" src="{{ url_for('static', filename='images/barangay-logo.png') }}" alt="Sangguniang Barangay Sta. Rita (Bata) seal">
-      <span>e-RESBAHUB<small>Resident &amp; Health Services System</small></span>
+
+<input type="checkbox" id="sidebar-toggle" class="sidebar-toggle-input">
+
+<div class="app-layout">
+
+  <!-- LEFT SIDEBAR -->
+  <aside class="app-sidebar">
+
+    <a class="sidebar-brand" href="{{ url_for('auth.home') }}">
+      <img
+        class="sidebar-logo"
+        src="{{ url_for('static', filename='images/barangay-logo.png') }}"
+        alt="Sangguniang Barangay Sta. Rita (Bata) seal"
+      >
+
+      <span class="sidebar-brand-text">
+        <strong class="sidebar-barangay">
+          Sangguniang Barangay Sta. Rita (Bata)
+        </strong>
+
+        <strong class="sidebar-system-name">e-RESBAHUB</strong>
+
+        <small class="sidebar-subtitle">
+          Resident &amp; Health Services System
+        </small>
+      </span>
     </a>
-    <nav class="links">
+
+    <nav class="sidebar-nav" aria-label="Main navigation">
+
       {% if current_user %}
         {% set role = current_user.role %}
+
         {% if role == 'resident' %}
-          <a href="{{ url_for('resident.dashboard') }}">Dashboard</a>
-          <a href="{{ url_for('resident.medicine') }}">Medicines</a>
-          <a href="{{ url_for('resident.new_request') }}">New Request</a>
-          <a href="{{ url_for('resident.my_requests') }}">My Requests</a>
-          <a href="{{ url_for('resident.announcements') }}">Announcements</a>
-          <a href="{{ url_for('resident.notifications') }}">Notifications{% if unread_count %}<span class="badge-count">{{ unread_count }}</span>{% endif %}</a>
-          <a href="{{ url_for('resident.medicine') }}">Medicine</a>
-          <a href="{{ url_for('resident.profile') }}">My Profile</a>
+          <a href="{{ url_for('resident.dashboard') }}">
+            <span class="nav-icon" aria-hidden="true">⌂</span>
+            <span class="nav-label">Dashboard</span>
+          </a>
+          <a href="{{ url_for('resident.new_request') }}">
+            <span class="nav-icon" aria-hidden="true">▤</span>
+            <span class="nav-label">New Request</span>
+          </a>
+          <a href="{{ url_for('resident.my_requests') }}">
+            <span class="nav-icon" aria-hidden="true">▣</span>
+            <span class="nav-label">My Requests</span>
+          </a>
+          <a href="{{ url_for('resident.announcements') }}">
+            <span class="nav-icon" aria-hidden="true">♢</span>
+            <span class="nav-label">Announcements</span>
+          </a>
+          <a href="{{ url_for('resident.notifications') }}">
+            <span class="nav-icon" aria-hidden="true">♧</span>
+            <span class="nav-label">Notifications</span>
+            {% if unread_count %}
+              <span class="badge-count">{{ unread_count }}</span>
+            {% endif %}
+          </a>
+          <a href="{{ url_for('resident.medicine') }}">
+            <span class="nav-icon" aria-hidden="true">✚</span>
+            <span class="nav-label">Medicines</span>
+          </a>
+          <a href="{{ url_for('resident.profile') }}">
+            <span class="nav-icon" aria-hidden="true">♙</span>
+            <span class="nav-label">My Profile</span>
+          </a>
         {% endif %}
+
         {% if role in ('barangay_staff', 'admin') %}
-          <a href="{{ url_for('staff.dashboard') }}">Barangay</a>
-          <a href="{{ url_for('staff.requests_list') }}">Requests</a>
-          <a href="{{ url_for('staff.residents') }}">Residents</a>
-          <a href="{{ url_for('staff.announcements') }}">Announcements</a>
+          <a href="{{ url_for('staff.dashboard') }}">
+            <span class="nav-icon" aria-hidden="true">⌂</span>
+            <span class="nav-label">Barangay</span>
+          </a>
+          <a href="{{ url_for('staff.requests_list') }}">
+            <span class="nav-icon" aria-hidden="true">▤</span>
+            <span class="nav-label">Requests</span>
+          </a>
+          <a href="{{ url_for('staff.residents') }}">
+            <span class="nav-icon" aria-hidden="true">♙</span>
+            <span class="nav-label">Residents</span>
+          </a>
+          <a href="{{ url_for('staff.announcements') }}">
+            <span class="nav-icon" aria-hidden="true">♢</span>
+            <span class="nav-label">Announcements</span>
+          </a>
         {% endif %}
+
         {% if role in ('health_staff', 'admin') %}
-          <a href="{{ url_for('health.dashboard') }}">Health Center</a>
-          <a href="{{ url_for('health.patients') }}">Patients</a>
-          <a href="{{ url_for('health.appointments') }}">Appointments</a>
-          <a href="{{ url_for('health.visits') }}">Visits</a>
-          <a href="{{ url_for('health.medicines') }}">Medicines</a>
+          <a href="{{ url_for('health.dashboard') }}">
+            <span class="nav-icon" aria-hidden="true">♡</span>
+            <span class="nav-label">Health Center</span>
+          </a>
+          <a href="{{ url_for('health.patients') }}">
+            <span class="nav-icon" aria-hidden="true">♙</span>
+            <span class="nav-label">Patients</span>
+          </a>
+          <a href="{{ url_for('health.appointments') }}">
+            <span class="nav-icon" aria-hidden="true">▦</span>
+            <span class="nav-label">Appointments</span>
+          </a>
+          <a href="{{ url_for('health.visits') }}">
+            <span class="nav-icon" aria-hidden="true">▣</span>
+            <span class="nav-label">Visits</span>
+          </a>
+          <a href="{{ url_for('health.medicines') }}">
+            <span class="nav-icon" aria-hidden="true">✚</span>
+            <span class="nav-label">Medicines</span>
+          </a>
         {% endif %}
+
         {% if role != 'resident' %}
-          <a href="{{ url_for('reports.reports') }}">Reports</a>
-          <a href="{{ url_for('reports.search') }}">Search</a>
+          <a href="{{ url_for('reports.reports') }}">
+            <span class="nav-icon" aria-hidden="true">▥</span>
+            <span class="nav-label">Reports</span>
+          </a>
+          <a href="{{ url_for('reports.search') }}">
+            <span class="nav-icon" aria-hidden="true">⌕</span>
+            <span class="nav-label">Search</span>
+          </a>
         {% endif %}
+
         {% if role == 'admin' %}
-          <a href="{{ url_for('admin.dashboard') }}">Admin</a>
+          <a href="{{ url_for('admin.dashboard') }}">
+            <span class="nav-icon" aria-hidden="true">⚙</span>
+            <span class="nav-label">Admin</span>
+          </a>
         {% endif %}
+
       {% else %}
-        <a href="{{ url_for('auth.login') }}">Log in</a>
-        <a href="{{ url_for('auth.register') }}">Register</a>
+        <a href="{{ url_for('auth.login') }}">
+          <span class="nav-icon" aria-hidden="true">⇥</span>
+          <span class="nav-label">Log in</span>
+        </a>
+        <a href="{{ url_for('auth.register') }}">
+          <span class="nav-icon" aria-hidden="true">＋</span>
+          <span class="nav-label">Register</span>
+        </a>
       {% endif %}
+
     </nav>
+
     {% if current_user %}
-    <div class="userbox">
-      <span>{{ current_user.full_name }}</span>
-      <span class="role">{{ ROLE_LABELS[current_user.role] }}</span>
-      <a href="{{ url_for('auth.change_password') }}">Password</a>
-      <form method="post" action="{{ url_for('auth.logout') }}" style="display:inline">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="linkbtn" type="submit">Log out</button>
-      </form>
-    </div>
+      <div class="sidebar-account">
+        <div class="sidebar-user">
+          <div class="sidebar-avatar" aria-hidden="true">♙</div>
+          <div class="sidebar-user-info">
+            <strong>{{ current_user.full_name }}</strong>
+            <small>{{ ROLE_LABELS[current_user.role] }}</small>
+          </div>
+        </div>
+
+        <div class="sidebar-account-links">
+          <a class="password-link"
+             href="{{ url_for('auth.change_password') }}">
+            ⚿ &nbsp; Password
+          </a>
+
+          <form method="post"
+                action="{{ url_for('auth.logout') }}"
+                class="sidebar-logout">
+            <input type="hidden"
+                   name="csrf_token"
+                   value="{{ csrf_token() }}">
+            <span aria-hidden="true">⇥</span>
+            <button type="submit">
+              <span class="logout-label">Log out</span>
+            </button>
+          </form>
+        </div>
+      </div>
     {% endif %}
+
+  </aside>
+
+  <!-- RIGHT WORKSPACE -->
+  <div class="app-workspace">
+
+    <header class="workspace-topbar">
+      <label for="sidebar-toggle"
+             class="workspace-menu"
+             role="button"
+             tabindex="0"
+             aria-label="Toggle sidebar"
+             title="Toggle sidebar">☰</label>
+
+      {% if current_user %}
+        <div class="profile-menu" id="profile-menu">
+          <button type="button"
+                  class="profile-trigger"
+                  id="profile-trigger"
+                  aria-expanded="false"
+                  aria-controls="profile-dropdown">
+            <span class="profile-avatar" aria-hidden="true">♙</span>
+            <span class="profile-trigger-info">
+              <strong>{{ current_user.full_name }}</strong>
+              <small>{{ ROLE_LABELS[current_user.role] }}</small>
+            </span>
+            <span class="profile-trigger-arrow" aria-hidden="true">⌄</span>
+          </button>
+
+          <div class="profile-dropdown"
+               id="profile-dropdown"
+               role="menu"
+               aria-labelledby="profile-trigger">
+
+            <div class="dropdown-account">
+              <span class="profile-avatar" aria-hidden="true">♙</span>
+              <span class="dropdown-account-info">
+                <strong>{{ current_user.full_name }}</strong>
+                <small>{{ ROLE_LABELS[current_user.role] }}</small>
+              </span>
+            </div>
+
+            <a class="dropdown-item"
+               role="menuitem"
+               href="{{ url_for('auth.change_password') }}">
+              <span class="dropdown-icon" aria-hidden="true">⚙</span>
+              <span class="dropdown-item-text">
+                <span>Settings &amp; privacy</span>
+                <small>Change your password</small>
+              </span>
+            </a>
+
+            <button type="button"
+                    class="dropdown-item"
+                    role="menuitem"
+                    id="help-button">
+              <span class="dropdown-icon" aria-hidden="true">?</span>
+              <span class="dropdown-item-text">
+                <span>Help &amp; support</span>
+                <small>Information about e-RESBAHUB</small>
+              </span>
+            </button>
+
+            <button type="button"
+                    class="dropdown-item"
+                    role="menuitem"
+                    id="report-problem-button">
+              <span class="dropdown-icon" aria-hidden="true">!</span>
+              <span class="dropdown-item-text">
+                <span>Report a problem</span>
+                <small>Tell the administrator</small>
+              </span>
+            </button>
+
+            <button type="button"
+                    class="dropdown-item"
+                    role="menuitem"
+                    id="dark-mode-button"
+                    aria-pressed="false">
+              <span class="dropdown-icon" aria-hidden="true" id="theme-icon">☾</span>
+              <span class="dropdown-item-text">
+                <span id="theme-label">Display &amp; accessibility</span>
+                <small id="theme-description">Switch to dark mode</small>
+              </span>
+            </button>
+
+            <div class="dropdown-divider"></div>
+
+            <form method="post"
+                  action="{{ url_for('auth.logout') }}">
+              <input type="hidden"
+                     name="csrf_token"
+                     value="{{ csrf_token() }}">
+              <button type="submit"
+                      class="dropdown-item dropdown-logout"
+                      role="menuitem">
+                <span class="dropdown-icon" aria-hidden="true">⇥</span>
+                <span class="dropdown-item-text">
+                  <span>Log out</span>
+                  <small>End your current session</small>
+                </span>
+              </button>
+            </form>
+          </div>
+        </div>
+      {% else %}
+        <strong>Resident &amp; Health Services System</strong>
+      {% endif %}
+    </header>
+
+    <main class="page-content container">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">
+            <span>{{ message }}</span>
+            <button type="button" aria-label="Close">&times;</button>
+          </div>
+        {% endfor %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer class="app-footer">
+      <strong>e-RESBAHUB</strong>
+      &middot; {{ barangay_name }}
+      &middot; Bulacan Agricultural State College, Institute of Computer Studies
+    </footer>
+
   </div>
-</header>
+</div>
 
-<main class="container">
-  {% with messages = get_flashed_messages(with_categories=true) %}
-    {% for category, message in messages %}
-      <div class="flash {{ category }}"><span>{{ message }}</span><button type="button" aria-label="Close">&times;</button></div>
-    {% endfor %}
-  {% endwith %}
-  {% block content %}{% endblock %}
-</main>
-
-<footer>e-RESBAHUB &middot; {{ barangay_name }} &middot; Bulacan Agricultural State College, Institute of Computer Studies</footer>
+<!-- Keep JavaScript external to avoid inline-script CSP problems. -->
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/profile_menu.js') }}" defer></script>
+
 </body>
 </html>

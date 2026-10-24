@@ -96,9 +96,29 @@ def create_app(test_config=None):
 
     app.teardown_appcontext(db.close_db)
 
-    from . import admin, auth, health, presence, reports, resident, staff
+    # Import all application blueprints, including QR verification.
+    from . import (
+        admin,
+        auth,
+        health,
+        presence,
+        reports,
+        resident,
+        staff,
+        verification,
+    )
 
-    for module in (auth, resident, staff, health, admin, reports, presence):
+    # Register application routes.
+    for module in (
+        auth,
+        resident,
+        staff,
+        health,
+        admin,
+        reports,
+        presence,
+        verification,
+    ):
         app.register_blueprint(module.bp)
 
     @app.before_request
