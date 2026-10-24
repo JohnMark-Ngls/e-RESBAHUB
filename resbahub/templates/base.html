@@ -775,6 +775,155 @@
       color: #164b82;
     }
 
+
+    
+/* =========================================
+   DARK MODE FIX — ANNOUNCEMENTS PAGE
+   Fix white panels and unreadable text
+   ========================================= */
+
+/* Announcement page text */
+body.dark-mode main.page-content h1,
+body.dark-mode main.page-content h2,
+body.dark-mode main.page-content h3,
+body.dark-mode main.page-content h4,
+body.dark-mode main.page-content p,
+body.dark-mode main.page-content label,
+body.dark-mode main.page-content legend,
+body.dark-mode main.page-content small {
+    color: #e8f3ec;
+}
+
+/* Announcement panels and calendar containers */
+body.dark-mode main.page-content .announcement-card,
+body.dark-mode main.page-content .announcement-form,
+body.dark-mode main.page-content .announcement-calendar,
+body.dark-mode main.page-content .calendar-card,
+body.dark-mode main.page-content .calendar-container,
+body.dark-mode main.page-content .form-card,
+body.dark-mode main.page-content .content-card,
+body.dark-mode main.page-content .card,
+body.dark-mode main.page-content .panel {
+    background-color: #1c2922 !important;
+    color: #e8f3ec !important;
+    border-color: #405649;
+}
+
+/* Form labels */
+body.dark-mode main.page-content form label,
+body.dark-mode main.page-content .form-label {
+    color: #d9eee0 !important;
+}
+
+/* Inputs, date picker and message textarea */
+body.dark-mode main.page-content input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+body.dark-mode main.page-content select,
+body.dark-mode main.page-content textarea {
+    background-color: #26372d !important;
+    color: #f4faf6 !important;
+    border-color: #536b5c !important;
+}
+
+/* Placeholder text */
+body.dark-mode main.page-content input::placeholder,
+body.dark-mode main.page-content textarea::placeholder {
+    color: #bdcfc3 !important;
+    opacity: 1;
+}
+
+/* Calendar title and weekday names */
+body.dark-mode main.page-content .calendar-header,
+body.dark-mode main.page-content .calendar-title,
+body.dark-mode main.page-content .calendar-weekdays,
+body.dark-mode main.page-content .calendar-weekdays *,
+body.dark-mode main.page-content .calendar-day-header {
+    color: #e8f3ec !important;
+}
+
+/* Calendar date buttons */
+body.dark-mode main.page-content .calendar-day,
+body.dark-mode main.page-content .calendar-date,
+body.dark-mode main.page-content .calendar-grid button,
+body.dark-mode main.page-content .calendar-nav button {
+    background-color: #26372d;
+    color: #e8f3ec !important;
+    border-color: #536b5c;
+}
+
+/* Calendar hover */
+body.dark-mode main.page-content .calendar-day:hover,
+body.dark-mode main.page-content .calendar-date:hover,
+body.dark-mode main.page-content .calendar-grid button:hover,
+body.dark-mode main.page-content .calendar-nav button:hover {
+    background-color: #365441 !important;
+    color: #ffffff !important;
+}
+
+/* Selected date */
+body.dark-mode main.page-content .calendar-day.selected,
+body.dark-mode main.page-content .calendar-date.selected,
+body.dark-mode main.page-content .calendar-day.active,
+body.dark-mode main.page-content .calendar-date.active,
+body.dark-mode main.page-content .calendar-grid button.selected {
+    background-color: #286b47 !important;
+    color: #ffffff !important;
+    border-color: #8fd5a8 !important;
+}
+
+/* Today's date */
+body.dark-mode main.page-content .calendar-day.today,
+body.dark-mode main.page-content .calendar-date.today {
+    border: 1px solid #8fd5a8 !important;
+    color: #b7e4c5 !important;
+}
+
+/* Date selection information panel */
+body.dark-mode main.page-content .selected-date,
+body.dark-mode main.page-content .selected-date-box,
+body.dark-mode main.page-content .date-preview,
+body.dark-mode main.page-content .date-selection {
+    background-color: #263b30 !important;
+    color: #e8f3ec !important;
+    border-color: #679477 !important;
+}
+
+body.dark-mode main.page-content .selected-date *,
+body.dark-mode main.page-content .selected-date-box *,
+body.dark-mode main.page-content .date-preview *,
+body.dark-mode main.page-content .date-selection * {
+    color: #e8f3ec !important;
+}
+
+/* Publish button */
+body.dark-mode main.page-content button[type="submit"],
+body.dark-mode main.page-content input[type="submit"] {
+    background-color: #367457;
+    color: #ffffff !important;
+    border-color: #508b6b;
+}
+
+body.dark-mode main.page-content button[type="submit"]:hover,
+body.dark-mode main.page-content input[type="submit"]:hover {
+    background-color: #438765;
+    color: #ffffff !important;
+}
+
+/* Disabled or unavailable calendar dates */
+body.dark-mode main.page-content .calendar-day:disabled,
+body.dark-mode main.page-content .calendar-date:disabled,
+body.dark-mode main.page-content .calendar-grid button:disabled {
+    color: #87988c !important;
+    opacity: 0.65;
+}
+
+/* Announcement helper text */
+body.dark-mode main.page-content .form-text,
+body.dark-mode main.page-content .help-text,
+body.dark-mode main.page-content .calendar-help {
+    color: #bdcfc3 !important;
+}
+
+
     /* PAGE CONTENT */
     main.page-content.container {
       width: 100%;
