@@ -1518,8 +1518,71 @@ body.dark-mode main a:focus-visible {
   </div>
 </div>
 
+
+<!-- Floating Chatbot -->
+<button type="button"
+        class="chatbot-toggle"
+        id="chatbot-toggle"
+        aria-label="Open chatbot"
+        aria-expanded="false"
+        aria-controls="chatbot-window">
+    💬
+</button>
+
+<div class="chatbot-window"
+     id="chatbot-window"
+     role="dialog"
+     aria-label="e-RESBAHUB chatbot"
+     aria-hidden="true">
+
+    <div class="chatbot-header">
+        <div>
+            <strong>e-RESBAHUB Assistant</strong>
+            <small>How can we help you?</small>
+        </div>
+
+        <button type="button"
+                class="chatbot-close"
+                id="chatbot-close"
+                aria-label="Close chatbot">
+            &times;
+        </button>
+    </div>
+
+    <div class="chatbot-messages"
+         id="chatbot-messages"
+         role="log"
+         aria-live="polite">
+        <div class="chatbot-message bot">
+            <a>Hello! Welcome to e-RESBAHUB. </a>
+            <a>How can I help you today?</a>
+        </div>
+    </div>
+
+    <div class="chatbot-suggestions" id="chatbot-suggestions">
+        <button type="button" class="chatbot-suggestion">How do I submit a request?</button>
+        <button type="button" class="chatbot-suggestion">How can I track my request?</button>
+        <button type="button" class="chatbot-suggestion">Why is my account pending verification?</button>
+        <button type="button" class="chatbot-suggestion">Why is my account still pending?</button>
+        <button type="button" class="chatbot-suggestion">Forgot my password?</button>
+    </div>
+
+    <form class="chatbot-form" id="chatbot-form">
+        <input type="text"
+               id="chatbot-input"
+               placeholder="Type your question..."
+               aria-label="Your question"
+               autocomplete="off"
+               required>
+
+        <button type="submit">Send</button>
+    </form>
+</div>
+
+
 <!-- Keep JavaScript external to avoid inline-script CSP problems. -->
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chatbot.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/profile_menu.js') }}" defer></script>
 
 </body>
