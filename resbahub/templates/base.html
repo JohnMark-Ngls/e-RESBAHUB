@@ -28,13 +28,24 @@
     * {
       box-sizing: border-box;
     }
-
+ 
     body {
       margin: 0;
-      background: var(--page-bg);
+      background-color: var(--page-bg);
+      background-image:
+        linear-gradient(
+          rgba(244, 247, 245, 0.72),
+          rgba(244, 247, 245, 0.72)
+        ),
+        url("{{ url_for('static', filename='images/barangay-hall.png') }}");
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
       color: #253a30;
       font-family: Arial, Helvetica, sans-serif;
     }
+
 
     button,
     input,
