@@ -8,13 +8,13 @@
   <title>{% block title %}e-RESBAHUB{% endblock %} | e-RESBAHUB</title>
 
   <link rel="stylesheet"
-        href="{{ url_for('static', filename='css/style.css') }}">
+        href="{{ url_for('static', filename='css/style.css', v=5) }}">
 
   <style>
     :root {
-      --sidebar-bg: #123d30;
-      --sidebar-hover: #285744;
-      --sidebar-active: #32694d;
+      --sidebar-bg: rgba(18, 61, 48, .94);
+      --sidebar-hover: rgba(40, 87, 68, .96);
+      --sidebar-active: rgba(50, 105, 77, .97);
       --sidebar-text: #f4f8f5;
       --page-bg: #f4f7f5;
       --text-main: #174b3d;
@@ -134,6 +134,7 @@
     }
 
     .sidebar-nav a {
+      position: relative;
       display: flex;
       align-items: center;
       gap: 12px;
@@ -144,13 +145,27 @@
       color: var(--sidebar-text);
       font-size: 14px;
       font-weight: 600;
-      transition: background .18s ease;
+      transition: background .18s ease, transform .18s ease, box-shadow .18s ease;
     }
 
     .sidebar-nav a:hover,
     .sidebar-nav a:focus-visible {
       background: var(--sidebar-hover);
       color: white;
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 5px 12px rgba(0, 0, 0, .18);
+      z-index: 1;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .sidebar-nav a {
+        transition: none;
+      }
+
+      .sidebar-nav a:hover,
+      .sidebar-nav a:focus-visible {
+        transform: none;
+      }
     }
 
     .sidebar-nav a.active {
@@ -182,85 +197,6 @@
       color: #243b2e;
       font-size: 11px;
       font-weight: 800;
-    }
-
-    /* SIDEBAR ACCOUNT */
-    .sidebar-account {
-      border-top: 1px solid rgba(255,255,255,.25);
-      padding: 18px 7px 0;
-      margin-top: 20px;
-    }
-
-    .sidebar-user {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 15px;
-      min-width: 0;
-    }
-
-    .sidebar-avatar {
-      width: 42px;
-      height: 42px;
-      flex: 0 0 42px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #668574;
-      color: white;
-      font-size: 19px;
-      font-weight: 800;
-    }
-
-    .sidebar-user-info {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      min-width: 0;
-      overflow-wrap: anywhere;
-    }
-
-    .sidebar-user-info strong {
-      color: white;
-      font-size: 13px;
-    }
-
-    .sidebar-user-info small {
-      color: #d6e4db;
-      font-size: 12px;
-    }
-
-    .sidebar-account a,
-    .sidebar-logout button {
-      color: #f4f8f5;
-      text-decoration: none;
-      font: inherit;
-      font-size: 13px;
-    }
-
-    .sidebar-account a:hover,
-    .sidebar-logout button:hover {
-      text-decoration: underline;
-    }
-
-    .sidebar-account-links {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .sidebar-logout {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .sidebar-logout button {
-      background: none;
-      border: 0;
-      padding: 0;
-      cursor: pointer;
     }
 
     /* WORKSPACE */
@@ -301,6 +237,17 @@
 
     .workspace-menu:hover {
       background: #edf3ee;
+    }
+
+    .collapse-icon {
+      display: inline-block;
+      transition: transform .2s ease;
+    }
+
+    @media (min-width: 769px) {
+      #sidebar-toggle:checked ~ .app-layout .collapse-icon {
+        transform: rotate(180deg);
+      }
     }
 
     /* PROFILE DROPDOWN */
@@ -995,10 +942,7 @@ body.dark-mode .page-content .calendar-header button {
     }
 
     #sidebar-toggle:checked ~ .app-layout .sidebar-brand-text,
-    #sidebar-toggle:checked ~ .app-layout .sidebar-nav .nav-label,
-    #sidebar-toggle:checked ~ .app-layout .sidebar-user-info,
-    #sidebar-toggle:checked ~ .app-layout .sidebar-logout .logout-label,
-    #sidebar-toggle:checked ~ .app-layout .sidebar-account .password-link {
+    #sidebar-toggle:checked ~ .app-layout .sidebar-nav .nav-label {
       display: none;
     }
 
@@ -1006,16 +950,6 @@ body.dark-mode .page-content .calendar-header button {
       justify-content: center;
       padding-left: 5px;
       padding-right: 5px;
-    }
-
-    #sidebar-toggle:checked ~ .app-layout .sidebar-account {
-      padding-left: 0;
-      padding-right: 0;
-    }
-
-    #sidebar-toggle:checked ~ .app-layout .sidebar-user,
-    #sidebar-toggle:checked ~ .app-layout .sidebar-logout {
-      justify-content: center;
     }
 
     /* RESPONSIVE */
@@ -1064,10 +998,7 @@ body.dark-mode .page-content .calendar-header button {
       }
 
       #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-brand-text,
-      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-nav .nav-label,
-      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-user-info,
-      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-logout .logout-label,
-      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-account .password-link {
+      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-nav .nav-label {
         display: none;
       }
 
@@ -1083,21 +1014,8 @@ body.dark-mode .page-content .calendar-header button {
         padding-right: 0;
       }
 
-      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-account {
-        padding-left: 0;
-        padding-right: 0;
-      }
-
-      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-user,
-      #sidebar-toggle:not(:checked) ~ .app-layout .sidebar-logout {
-        justify-content: center;
-      }
-
       #sidebar-toggle:checked ~ .app-layout .sidebar-brand-text,
-      #sidebar-toggle:checked ~ .app-layout .sidebar-nav .nav-label,
-      #sidebar-toggle:checked ~ .app-layout .sidebar-user-info,
-      #sidebar-toggle:checked ~ .app-layout .sidebar-logout .logout-label,
-      #sidebar-toggle:checked ~ .app-layout .sidebar-account .password-link {
+      #sidebar-toggle:checked ~ .app-layout .sidebar-nav .nav-label {
         display: initial;
       }
 
@@ -1111,13 +1029,12 @@ body.dark-mode .page-content .calendar-header button {
         padding: 0 7px 24px;
       }
 
-      #sidebar-toggle:checked ~ .app-layout .sidebar-account {
-        padding: 18px 7px 0;
+      #sidebar-toggle:not(:checked) ~ .app-layout .collapse-icon {
+        transform: rotate(180deg);
       }
 
-      #sidebar-toggle:checked ~ .app-layout .sidebar-user,
-      #sidebar-toggle:checked ~ .app-layout .sidebar-logout {
-        justify-content: flex-start;
+      #sidebar-toggle:checked ~ .app-layout .collapse-icon {
+        transform: none;
       }
     }
 
@@ -1222,7 +1139,7 @@ body.dark-mode main a:focus-visible {
 <div class="app-layout">
 
   <!-- LEFT SIDEBAR -->
-  <aside class="app-sidebar">
+  <aside class="app-sidebar" id="app-sidebar">
 
     <a class="sidebar-brand" href="{{ url_for('auth.home') }}">
       <img
@@ -1246,146 +1163,158 @@ body.dark-mode main a:focus-visible {
 
     <nav class="sidebar-nav" aria-label="Main navigation">
 
+      {% set endpoint = request.endpoint or '' %}
       {% if current_user %}
         {% set role = current_user.role %}
 
         {% if role == 'resident' %}
-          <a href="{{ url_for('resident.dashboard') }}">
+          <a href="{{ url_for('resident.dashboard') }}"
+             class="{{ 'active' if endpoint == 'resident.dashboard' else '' }}"
+             {% if endpoint == 'resident.dashboard' %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">⌂</span>
             <span class="nav-label">Dashboard</span>
           </a>
-          <a href="{{ url_for('resident.new_request') }}">
+          <a href="{{ url_for('resident.new_request') }}"
+             class="{{ 'active' if endpoint == 'resident.new_request' else '' }}"
+             {% if endpoint == 'resident.new_request' %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">▤</span>
             <span class="nav-label">New Request</span>
           </a>
-          <a href="{{ url_for('resident.my_requests') }}">
+          <a href="{{ url_for('resident.my_requests') }}"
+             class="{{ 'active' if endpoint in ('resident.my_requests', 'resident.request_detail', 'resident.cancel_request', 'resident.download_document') else '' }}"
+             {% if endpoint in ('resident.my_requests', 'resident.request_detail', 'resident.cancel_request', 'resident.download_document') %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">▣</span>
             <span class="nav-label">My Requests</span>
           </a>
-          <a href="{{ url_for('resident.announcements') }}">
+          <a href="{{ url_for('resident.announcements') }}"
+             class="{{ 'active' if endpoint == 'resident.announcements' else '' }}"
+             {% if endpoint == 'resident.announcements' %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">♢</span>
             <span class="nav-label">Announcements</span>
           </a>
-          <a href="{{ url_for('resident.notifications') }}">
+          <a href="{{ url_for('resident.notifications') }}"
+             class="{{ 'active' if endpoint == 'resident.notifications' else '' }}"
+             {% if endpoint == 'resident.notifications' %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">♧</span>
             <span class="nav-label">Notifications</span>
             {% if unread_count %}
               <span class="badge-count">{{ unread_count }}</span>
             {% endif %}
           </a>
-          <a href="{{ url_for('resident.medicine') }}">
+          <a href="{{ url_for('resident.medicine') }}"
+             class="{{ 'active' if endpoint == 'resident.medicine' else '' }}"
+             {% if endpoint == 'resident.medicine' %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">✚</span>
             <span class="nav-label">Medicines</span>
           </a>
-          <a href="{{ url_for('resident.profile') }}">
+          <a href="{{ url_for('resident.profile') }}"
+             class="{{ 'active' if endpoint == 'resident.profile' else '' }}"
+             {% if endpoint == 'resident.profile' %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">♙</span>
             <span class="nav-label">My Profile</span>
           </a>
         {% endif %}
 
         {% if role in ('barangay_staff', 'admin') %}
-          <a href="{{ url_for('staff.dashboard') }}">
+          <a href="{{ url_for('staff.dashboard') }}"
+             class="{{ 'active' if endpoint == 'staff.dashboard' else '' }}"
+             {% if endpoint == 'staff.dashboard' %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">⌂</span>
             <span class="nav-label">Barangay</span>
           </a>
-          <a href="{{ url_for('staff.requests_list') }}">
+          <a href="{{ url_for('staff.requests_list') }}"
+             class="{{ 'active' if endpoint in ('staff.requests_list', 'staff.update_request') else '' }}"
+             {% if endpoint in ('staff.requests_list', 'staff.update_request') %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">▤</span>
             <span class="nav-label">Requests</span>
           </a>
-          <a href="{{ url_for('staff.residents') }}">
+          <a href="{{ url_for('staff.residents') }}"
+             class="{{ 'active' if endpoint in ('staff.residents', 'staff.resident_edit') else '' }}"
+             {% if endpoint in ('staff.residents', 'staff.resident_edit') %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">♙</span>
             <span class="nav-label">Residents</span>
           </a>
-          <a href="{{ url_for('staff.announcements') }}">
+          <a href="{{ url_for('staff.announcements') }}"
+             class="{{ 'active' if endpoint in ('staff.announcements', 'staff.delete_announcement') else '' }}"
+             {% if endpoint in ('staff.announcements', 'staff.delete_announcement') %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">♢</span>
             <span class="nav-label">Announcements</span>
           </a>
         {% endif %}
 
         {% if role in ('health_staff', 'admin') %}
-          <a href="{{ url_for('health.dashboard') }}">
+          <a href="{{ url_for('health.dashboard') }}"
+             class="{{ 'active' if endpoint == 'health.dashboard' else '' }}"
+             {% if endpoint == 'health.dashboard' %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">♡</span>
             <span class="nav-label">Health Center</span>
           </a>
-          <a href="{{ url_for('health.patients') }}">
+          <a href="{{ url_for('health.patients') }}"
+             class="{{ 'active' if endpoint in ('health.patients', 'health.patient_new', 'health.patient_detail', 'health.patient_edit') else '' }}"
+             {% if endpoint in ('health.patients', 'health.patient_new', 'health.patient_detail', 'health.patient_edit') %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">♙</span>
             <span class="nav-label">Patients</span>
           </a>
-          <a href="{{ url_for('health.appointments') }}">
+          <a href="{{ url_for('health.appointments') }}"
+             class="{{ 'active' if endpoint in ('health.appointments', 'health.appointment_new', 'health.appointment_status') else '' }}"
+             {% if endpoint in ('health.appointments', 'health.appointment_new', 'health.appointment_status') %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">▦</span>
             <span class="nav-label">Appointments</span>
           </a>
-          <a href="{{ url_for('health.visits') }}">
+          <a href="{{ url_for('health.visits') }}"
+             class="{{ 'active' if endpoint in ('health.visits', 'health.visit_new') else '' }}"
+             {% if endpoint in ('health.visits', 'health.visit_new') %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">▣</span>
             <span class="nav-label">Visits</span>
           </a>
-          <a href="{{ url_for('health.medicines') }}">
+          <a href="{{ url_for('health.medicines') }}"
+             class="{{ 'active' if endpoint in ('health.medicines', 'health.medicine_stock', 'health.medicine_toggle') else '' }}"
+             {% if endpoint in ('health.medicines', 'health.medicine_stock', 'health.medicine_toggle') %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">✚</span>
             <span class="nav-label">Medicines</span>
           </a>
         {% endif %}
 
         {% if role != 'resident' %}
-          <a href="{{ url_for('reports.reports') }}">
+          <a href="{{ url_for('reports.reports') }}"
+             class="{{ 'active' if endpoint in ('reports.reports', 'reports.export_csv') else '' }}"
+             {% if endpoint in ('reports.reports', 'reports.export_csv') %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">▥</span>
             <span class="nav-label">Reports</span>
           </a>
-          <a href="{{ url_for('reports.search') }}">
+          <a href="{{ url_for('reports.search') }}"
+             class="{{ 'active' if endpoint == 'reports.search' else '' }}"
+             {% if endpoint == 'reports.search' %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">⌕</span>
             <span class="nav-label">Search</span>
           </a>
         {% endif %}
 
         {% if role == 'admin' %}
-          <a href="{{ url_for('admin.dashboard') }}">
+          <a href="{{ url_for('admin.dashboard') }}"
+             class="{{ 'active' if endpoint.startswith('admin.') else '' }}"
+             {% if endpoint.startswith('admin.') %}aria-current="page"{% endif %}>
             <span class="nav-icon" aria-hidden="true">⚙</span>
             <span class="nav-label">Admin</span>
           </a>
         {% endif %}
 
       {% else %}
-        <a href="{{ url_for('auth.login') }}">
+        <a href="{{ url_for('auth.login') }}"
+           class="{{ 'active' if endpoint == 'auth.login' else '' }}"
+           {% if endpoint == 'auth.login' %}aria-current="page"{% endif %}>
           <span class="nav-icon" aria-hidden="true">⇥</span>
           <span class="nav-label">Log in</span>
         </a>
-        <a href="{{ url_for('auth.register') }}">
+        <a href="{{ url_for('auth.register') }}"
+           class="{{ 'active' if endpoint == 'auth.register' else '' }}"
+           {% if endpoint == 'auth.register' %}aria-current="page"{% endif %}>
           <span class="nav-icon" aria-hidden="true">＋</span>
           <span class="nav-label">Register</span>
         </a>
       {% endif %}
 
     </nav>
-
-    {% if current_user %}
-      <div class="sidebar-account">
-        <div class="sidebar-user">
-          <div class="sidebar-avatar" aria-hidden="true">♙</div>
-          <div class="sidebar-user-info">
-            <strong>{{ current_user.full_name }}</strong>
-            <small>{{ ROLE_LABELS[current_user.role] }}</small>
-          </div>
-        </div>
-
-        <div class="sidebar-account-links">
-          <a class="password-link"
-             href="{{ url_for('auth.change_password') }}">
-            ⚿ &nbsp; Password
-          </a>
-
-          <form method="post"
-                action="{{ url_for('auth.logout') }}"
-                class="sidebar-logout">
-            <input type="hidden"
-                   name="csrf_token"
-                   value="{{ csrf_token() }}">
-            <span aria-hidden="true">⇥</span>
-            <button type="submit">
-              <span class="logout-label">Log out</span>
-            </button>
-          </form>
-        </div>
-      </div>
-    {% endif %}
 
   </aside>
 
@@ -1395,10 +1324,15 @@ body.dark-mode main a:focus-visible {
     <header class="workspace-topbar">
       <label for="sidebar-toggle"
              class="workspace-menu"
+             id="sidebar-toggle-button"
              role="button"
              tabindex="0"
-             aria-label="Toggle sidebar"
-             title="Toggle sidebar">☰</label>
+             aria-label="Collapse or expand sidebar"
+             aria-controls="app-sidebar"
+             aria-expanded="true"
+             title="Collapse or expand sidebar">
+        <span class="collapse-icon" aria-hidden="true">‹</span>
+      </label>
 
       {% if current_user %}
         <div class="profile-menu" id="profile-menu">
@@ -1581,7 +1515,7 @@ body.dark-mode main a:focus-visible {
 
 
 <!-- Keep JavaScript external to avoid inline-script CSP problems. -->
-<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js', v=6) }}"></script>
 <script src="{{ url_for('static', filename='js/chatbot.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/profile_menu.js') }}" defer></script>
 

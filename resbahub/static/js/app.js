@@ -1,5 +1,36 @@
 /* e-RESBAHUB small helpers (no libraries). */
 document.addEventListener("DOMContentLoaded", function () {
+  var sidebarToggle = document.getElementById("sidebar-toggle");
+  var sidebarToggleButton = document.getElementById("sidebar-toggle-button");
+  if (sidebarToggle && sidebarToggleButton) {
+    var sidebarMobileQuery = window.matchMedia("(max-width: 768px)");
+    function updateSidebarToggleState() {
+      var isExpanded = sidebarMobileQuery.matches
+        ? sidebarToggle.checked
+        : !sidebarToggle.checked;
+      sidebarToggleButton.setAttribute("aria-expanded", String(isExpanded));
+      sidebarToggleButton.setAttribute(
+        "aria-label",
+        isExpanded ? "Collapse sidebar" : "Expand sidebar"
+      );
+      sidebarToggleButton.setAttribute(
+        "title",
+        isExpanded ? "Collapse sidebar" : "Expand sidebar"
+      );
+    }
+
+    sidebarToggle.addEventListener("change", updateSidebarToggleState);
+    sidebarToggleButton.addEventListener("keydown", function (event) {
+      if (event.key === " " || event.key === "Enter") {
+        event.preventDefault();
+        sidebarToggle.checked = !sidebarToggle.checked;
+        sidebarToggle.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    });
+    sidebarMobileQuery.addEventListener("change", updateSidebarToggleState);
+    updateSidebarToggleState();
+  }
+
   var clock = document.querySelector("[data-live-clock]");
   var date = document.querySelector("[data-live-date]");
   if (clock && date) {
