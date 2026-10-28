@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h2>Book a Health Appointment</h2>
+    <p>Complete the form below to request an appointment.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('resident.appointment_new') }}">
+        {% if csrf_token is defined %}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% endif %}
+
+        <div class="mb-3">
+            <label for="appointment_date" class="form-label">Appointment Date</label>
+            <input
+                type="date"
+                id="appointment_date"
+                name="appointment_date"
+                class="form-control"
+                value="{{ form.appointment_date }}"
+                min="{{ form.appointment_date if form.appointment_date else '' }}"
+                required>
+        </div>
+
+        <div class="mb-3">
+            <label for="appointment_time" class="form-label">Preferred Time (optional)</label>
+            <input
+                type="time"
+                id="appointment_time"
+                name="appointment_time"
+                class="form-control"
+                value="{{ form.appointment_time or '' }}">
+        </div>
+
+        <div class="mb-3">
+            <label for="service_type" class="form-label">Health Service</label>
+            <select id="service_type" name="service_type" class="form-select" required>
+                {% for service in service_types %}
+                    <option value="{{ service }}"
+                        {% if form.service_type == service %}selected{% endif %}>
+                        {{ service }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label for="notes" class="form-label">Notes (optional)</label>
+            <textarea
+                id="notes"
+                name="notes"
+                class="form-control"
+                maxlength="300"
+                rows="3">{{ form.notes or '' }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit Appointment</button>
+        <a href="{{ url_for('resident.appointments') }}"
+           class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}

@@ -29,14 +29,16 @@ from .utils import (
     REQUEST_STATUSES,
     REQUEST_TRANSITIONS,
     SEX,
+    SERVICE_TYPES,
+    TIME_RE,
     audit,
     display_name,
+    parse_date,
     read_resident_form,
     save_upload,
     upload_problem,
     validate_resident,
 )
-
 bp = Blueprint("resident", __name__)
 
 MAX_FILES = 3
@@ -702,4 +704,155 @@ def notifications():
     return render_template(
         "resident/notifications.html",
         rows=rows,
+    )
+@bp.route("/appointments")
+@roles_required("resident", admin=False)
+def appointments():
+    resident = get_resident()
+
+    patient = db.query(
+        """
+        SELECT id, patient_no
+        FROM patients
+        WHERE resident_id = ?
+        """,
+        (resident["id"],),
+        one=True,
+    )
+
+    rows = []
+
+    if patient:
+        rows = db.query(
+            """
+            SELECT id, service_type, appointment_date,
+                   appointment_time, queue_no, status, notes
+            FROM appointments
+            WHERE patient_id = ?
+            ORDER BY appointment_date DESC, queue_no DESC
+            """,
+            (patient["id"],),
+        )
+
+    return render_template(
+        "resident/appointments.html",
+        patient=patient,
+        rows=rows,
+    )
+
+
+@bp.route("/appointments/new", methods=["GET", "POST"])
+@roles_required("resident", admin=False)
+def appointment_new():
+    resident = get_resident()
+
+    patient = db.query(
+        """
+        SELECT id, patient_no
+        FROM patients
+        WHERE resident_id = ?
+        """,
+        (resident["id"],),
+        one=True,
+    )
+
+    if patient is None:
+        flash(
+            "Your health record has not been created yet. "
+            "Please contact the barangay health staff.",
+            "warning",
+        )
+        return redirect(url_for("resident.appointments"))
+
+    form = {
+        "appointment_date": date.today().isoformat(),
+        "appointment_time": "",
+        "service_type": SERVICE_TYPES[0],
+        "notes": "",
+    }
+
+    if request.method == "POST":
+        form = {
+            "appointment_date": (
+                request.form.get("appointment_date") or ""
+            ).strip(),
+            "appointment_time": (
+                request.form.get("appointment_time") or ""
+            ).strip(),
+            "service_type": (
+                request.form.get("service_type") or ""
+            ).strip(),
+            "notes": (
+                request.form.get("notes") or ""
+            ).strip(),
+        }
+
+        errors = []
+        day = parse_date(form["appointment_date"])
+
+        if day is None or day < date.today():
+            errors.append("Please choose today or a future date.")
+
+        if form["service_type"] not in SERVICE_TYPES:
+            errors.append("Please choose a valid health service.")
+
+        if (
+            form["appointment_time"]
+            and not TIME_RE.match(form["appointment_time"])
+        ):
+            errors.append("Please enter a valid appointment time.")
+
+        if len(form["notes"]) > 300:
+            errors.append("Notes must not exceed 300 characters.")
+
+        if errors:
+            for error in errors:
+                flash(error, "danger")
+        else:
+            queue = db.query(
+                """
+                SELECT COALESCE(MAX(queue_no), 0) + 1 AS n
+                FROM appointments
+                WHERE appointment_date = ?
+                """,
+                (form["appointment_date"],),
+                one=True,
+            )["n"]
+
+            db.execute(
+                """
+                INSERT INTO appointments (
+                    patient_id, service_type, appointment_date,
+                    appointment_time, queue_no, notes, created_by
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    patient["id"],
+                    form["service_type"],
+                    form["appointment_date"],
+                    form["appointment_time"] or None,
+                    queue,
+                    form["notes"] or None,
+                    g.user["id"],
+                ),
+            )
+
+            audit(
+                "appointment_create",
+                f"Resident #{resident['id']} booked "
+                f"{form['appointment_date']}, queue {queue}",
+            )
+
+            flash(
+                f"Appointment booked successfully. Queue number: {queue}.",
+                "success",
+            )
+            return redirect(url_for("resident.appointments"))
+
+    return render_template(
+        "resident/appointment_form.html",
+        form=form,
+        patient=patient,
+        service_types=SERVICE_TYPES,
     )

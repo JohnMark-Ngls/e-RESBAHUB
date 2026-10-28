@@ -1,0 +1,60 @@
+ {% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h2>My Health Appointments</h2>
+    <p>View your scheduled health appointments and queue numbers.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    {% if patient %}
+        <p><strong>Patient Number:</strong> {{ patient.patient_no }}</p>
+        <a href="{{ url_for('resident.appointment_new') }}"
+           class="btn btn-primary mb-3">Book an Appointment</a>
+
+        {% if rows %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Service</th>
+                        <th>Queue No.</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td>{{ row.appointment_date }}</td>
+                        <td>{{ row.appointment_time or 'Not specified' }}</td>
+                        <td>{{ row.service_type }}</td>
+                        <td>{{ row.queue_no }}</td>
+                        <td>{{ row.status }}</td>
+                        <td>{{ row.notes or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p>You have no appointments yet.</p>
+        {% endif %}
+    {% else %}
+        <div class="alert alert-warning">
+            Your health record has not been created yet. Please contact
+            the barangay health staff before booking an appointment.
+        </div>
+    {% endif %}
+
+    <a href="{{ url_for('resident.dashboard') }}" class="btn btn-secondary">
+        Back to Dashboard
+    </a>
+</div>
+{% endblock %}
