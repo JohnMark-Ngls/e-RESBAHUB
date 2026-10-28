@@ -1,0 +1,66 @@
+
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+
+{% block title %}Book Health Appointment{% endblock %}
+
+{% block content %}
+<div class="row spread">
+  <h1>Book Health Appointment</h1>
+  <a class="btn secondary"
+     href="{{ url_for('resident.my_appointments') }}">
+    My Appointments
+  </a>
+</div>
+
+<div class="card">
+  <form method="post">
+    {{ csrf() }}
+
+    <label for="service_type">Health Service</label>
+    <select id="service_type" name="service_type" required>
+      <option value="">-- Select a health service --</option>
+      {% for service in services %}
+      <option value="{{ service }}"
+        {% if form.service_type == service %}selected{% endif %}>
+        {{ service }}
+      </option>
+      {% endfor %}
+    </select>
+
+    <label for="appointment_date">Appointment Date</label>
+    <input
+      id="appointment_date"
+      name="appointment_date"
+      type="date"
+      min="{{ today }}"
+      value="{{ form.appointment_date }}"
+      required
+    >
+
+    <label for="appointment_time">Preferred Time</label>
+    <input
+      id="appointment_time"
+      name="appointment_time"
+      type="time"
+      value="{{ form.appointment_time }}"
+    >
+
+    <label for="notes">Reason / Notes (optional)</label>
+    <textarea
+      id="notes"
+      name="notes"
+      rows="4"
+      maxlength="300"
+      placeholder="Briefly describe the reason for your appointment"
+    >{{ form.notes }}</textarea>
+
+    <p class="muted small">
+      Your appointment will initially have Scheduled status.
+      Please confirm your schedule with the Health Center if needed.
+    </p>
+
+    <button class="btn" type="submit">Book Appointment</button>
+  </form>
+</div>
+{% endblock %}
