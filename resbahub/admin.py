@@ -536,3 +536,63 @@ def audit_log():
     )
 
     return render_template("admin/audit.html", rows=rows)
+
+@bp.route("/medicine-requests")
+@roles_required()
+def medicine_requests():
+    q = (request.args.get("q") or "").strip()
+    status = (request.args.get("status") or "").strip()
+
+    sql = """
+        SELECT
+            mr.id,
+            mr.reference_no,
+            mr.quantity,
+            mr.purpose,
+            mr.status,
+            mr.remarks,
+            mr.created_at,
+            mr.updated_at,
+            r.first_name,
+            r.middle_name,
+            r.last_name,
+            r.suffix,
+            u.username,
+            mi.name AS medicine_name,
+            mi.strength,
+            mi.form
+        FROM medicine_requests mr
+        JOIN residents r ON r.id = mr.resident_id
+        JOIN users u ON u.id = r.user_id
+        JOIN medicine_inventory mi ON mi.id = mr.medicine_id
+        WHERE 1 = 1
+    """
+    args = []
+
+    if status in ("Pending", "Approved", "Rejected", "Completed"):
+        sql += " AND mr.status = ?"
+        args.append(status)
+
+    if q:
+        sql += """
+            AND (
+                mr.reference_no LIKE ?
+                OR r.first_name LIKE ?
+                OR r.last_name LIKE ?
+                OR u.username LIKE ?
+                OR mi.name LIKE ?
+            )
+        """
+        search = like(q)
+        args.extend([search] * 5)
+
+    sql += " ORDER BY mr.created_at DESC, mr.id DESC LIMIT 500"
+
+    rows = db.query(sql, args)
+
+    return render_template(
+        "admin/medicine_requests.html",
+        rows=rows,
+        q=q,
+        status=status,
+    )

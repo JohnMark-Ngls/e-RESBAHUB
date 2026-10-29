@@ -82,6 +82,7 @@ def dashboard():
         (month,),
         one=True,
     )["c"]
+
     medicine_inventory = db.query(
         """
         SELECT id, name, stock_quantity, is_active, updated_at
@@ -119,12 +120,14 @@ def medicines():
 
         if not name or len(name) > 120:
             errors.append("Enter a medicine name up to 120 characters.")
+
         if (
             len(condition) > 120
             or len(strength) > 60
             or len(description) > 255
         ):
             errors.append("Medicine details exceed the allowed length.")
+
         if medicine_form not in ("", "Tablet", "Capsule", "Syrup", "Other"):
             errors.append("Choose a valid medicine form.")
 
@@ -133,7 +136,9 @@ def medicines():
             if quantity < 0 or quantity > 2147483647:
                 raise ValueError
         except ValueError:
-            errors.append("Stock quantity must be a whole number from 0 upward.")
+            errors.append(
+                "Stock quantity must be a whole number from 0 upward."
+            )
 
         if errors:
             for error in errors:
@@ -151,7 +156,8 @@ def medicines():
                         strength = VALUES(strength),
                         form = VALUES(form),
                         description = VALUES(description),
-                        stock_quantity = stock_quantity + VALUES(stock_quantity),
+                        stock_quantity =
+                            stock_quantity + VALUES(stock_quantity),
                         is_active = 1,
                         updated_by = VALUES(updated_by),
                         updated_at = CURRENT_TIMESTAMP
@@ -169,8 +175,12 @@ def medicines():
             except Exception:
                 db.rollback()
                 raise
+
             audit("medicine_added", f"Added {name} (stock: {quantity})")
-            flash(f"{name} was added or updated in the inventory.", "success")
+            flash(
+                f"{name} was added or updated in the inventory.",
+                "success",
+            )
             return redirect(url_for("health.medicines"))
 
     rows = db.query(
@@ -181,6 +191,7 @@ def medicines():
         ORDER BY condition_name, name
         """
     )
+
     return render_template("health/medicines.html", rows=rows)
 
 
@@ -192,16 +203,21 @@ def medicine_stock(medicine_id):
         (medicine_id,),
         one=True,
     )
+
     if medicine is None:
         abort(404)
 
     quantity_text = (request.form.get("stock_quantity") or "").strip()
+
     try:
         quantity = int(quantity_text)
         if quantity < 0 or quantity > 2147483647:
             raise ValueError
     except ValueError:
-        flash("Stock quantity must be a whole number from 0 upward.", "danger")
+        flash(
+            "Stock quantity must be a whole number from 0 upward.",
+            "danger",
+        )
     else:
         db.execute(
             """
@@ -228,10 +244,12 @@ def medicine_toggle(medicine_id):
         (medicine_id,),
         one=True,
     )
+
     if medicine is None:
         abort(404)
 
     active = not bool(medicine["is_active"])
+
     db.execute(
         """
         UPDATE medicine_inventory
@@ -240,16 +258,247 @@ def medicine_toggle(medicine_id):
         """,
         (active, g.user["id"], medicine_id),
     )
+
     audit(
         "medicine_visibility_updated",
         f"{'Published' if active else 'Unpublished'} {medicine['name']}",
     )
+
     flash(
         f"{medicine['name']} is now "
         f"{'visible' if active else 'hidden'} to residents.",
         "success",
     )
+
     return redirect(url_for("health.medicines"))
+
+
+
+# Medicine requests submitted by residents
+
+@bp.route("/medicine-requests")
+@roles_required(*HEALTH)
+def medicine_requests():
+    q = (request.args.get("q") or "").strip()
+    status = (request.args.get("status") or "").strip()
+
+    sql = """
+        SELECT
+            mr.id,
+            mr.reference_no,
+            mr.quantity,
+            mr.purpose,
+            mr.status,
+            mr.remarks,
+            mr.created_at,
+            r.first_name,
+            r.middle_name,
+            r.last_name,
+            r.suffix,
+            u.username,
+            mi.name AS medicine_name,
+            mi.strength,
+            mi.form,
+            mi.stock_quantity
+        FROM medicine_requests mr
+        JOIN residents r ON r.id = mr.resident_id
+        JOIN users u ON u.id = r.user_id
+        JOIN medicine_inventory mi ON mi.id = mr.medicine_id
+        WHERE 1 = 1
+    """
+    args = []
+
+    if status in ("Pending", "Approved", "Rejected"):
+        sql += " AND mr.status = ?"
+        args.append(status)
+
+    if q:
+        sql += """
+            AND (
+                mr.reference_no LIKE ?
+                OR r.first_name LIKE ?
+                OR r.last_name LIKE ?
+                OR u.username LIKE ?
+                OR mi.name LIKE ?
+            )
+        """
+        search = like(q)
+        args.extend([search] * 5)
+
+    sql += " ORDER BY mr.created_at DESC, mr.id DESC LIMIT 500"
+
+    rows = db.query(sql, args)
+
+    return render_template(
+        "health/medicine_requests.html",
+        rows=rows,
+        q=q,
+        status=status,
+    )
+
+
+@bp.route(
+    "/medicine-requests/<int:request_id>/status",
+    methods=["POST"],
+)
+@roles_required(*HEALTH)
+def medicine_request_status(request_id):
+    new_status = (request.form.get("status") or "").strip()
+    remarks = (request.form.get("remarks") or "").strip()
+
+    if new_status not in ("Approved", "Rejected"):
+        abort(400)
+
+    if len(remarks) > 500:
+        flash("Remarks must not exceed 500 characters.", "danger")
+        return redirect(url_for("health.medicine_requests"))
+
+    if new_status == "Rejected" and not remarks:
+        flash(
+            "Please provide a reason when rejecting a request.",
+            "danger",
+        )
+        return redirect(url_for("health.medicine_requests"))
+
+    conn = db.get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Lock the request row to prevent concurrent processing.
+        cursor.execute(
+            """
+            SELECT id, reference_no, medicine_id, quantity, status
+            FROM medicine_requests
+            WHERE id = %s
+            FOR UPDATE
+            """,
+            (request_id,),
+        )
+        medicine_request = cursor.fetchone()
+
+        if medicine_request is None:
+            conn.rollback()
+            abort(404)
+
+        reference_no = medicine_request["reference_no"]
+
+        if medicine_request["status"] != "Pending":
+            conn.rollback()
+            flash(
+                "This request has already been reviewed. "
+                "Stock was not changed.",
+                "warning",
+            )
+            return redirect(url_for("health.medicine_requests"))
+
+        quantity_requested = int(medicine_request["quantity"])
+
+        if new_status == "Approved":
+            # Lock the inventory row and check available stock.
+            cursor.execute(
+                """
+                SELECT id, name, stock_quantity
+                FROM medicine_inventory
+                WHERE id = %s
+                FOR UPDATE
+                """,
+                (medicine_request["medicine_id"],),
+            )
+            medicine = cursor.fetchone()
+
+            if medicine is None:
+                conn.rollback()
+                flash("The requested medicine was not found.", "danger")
+                return redirect(url_for("health.medicine_requests"))
+
+            available = int(medicine["stock_quantity"])
+
+            if available < quantity_requested:
+                conn.rollback()
+                flash(
+                    f"Insufficient stock for {medicine['name']}. "
+                    f"Available: {available}; "
+                    f"requested: {quantity_requested}.",
+                    "danger",
+                )
+                return redirect(url_for("health.medicine_requests"))
+
+            # Deduct stock only when sufficient stock is available.
+            cursor.execute(
+                """
+                UPDATE medicine_inventory
+                SET stock_quantity = stock_quantity - %s,
+                    updated_by = %s,
+                    updated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                  AND stock_quantity >= %s
+                """,
+                (
+                    quantity_requested,
+                    g.user["id"],
+                    medicine_request["medicine_id"],
+                    quantity_requested,
+                ),
+            )
+
+            if cursor.rowcount != 1:
+                conn.rollback()
+                flash(
+                    "Unable to update medicine stock. "
+                    "The request was not approved.",
+                    "danger",
+                )
+                return redirect(url_for("health.medicine_requests"))
+
+        # Update status in the same transaction as the stock deduction.
+        cursor.execute(
+            """
+            UPDATE medicine_requests
+            SET status = %s,
+                remarks = %s
+            WHERE id = %s
+              AND status = 'Pending'
+            """,
+            (new_status, remarks or None, request_id),
+        )
+
+        if cursor.rowcount != 1:
+            conn.rollback()
+            flash(
+                "This request was already processed. Please refresh.",
+                "warning",
+            )
+            return redirect(url_for("health.medicine_requests"))
+
+        audit(
+            "medicine_request_status",
+            f"{reference_no} changed to {new_status}",
+            commit=False,
+        )
+
+        conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        cursor.close()
+
+    if new_status == "Approved":
+        flash(
+            f"Request {reference_no} approved. "
+            f"Stock reduced by {quantity_requested}.",
+            "success",
+        )
+    else:
+        flash(
+            f"Request {reference_no} rejected. "
+            "Stock was not changed.",
+            "success",
+        )
+
+    return redirect(url_for("health.medicine_requests"))
 
 
 # Patients
@@ -979,13 +1228,19 @@ def visit_new():
             if form["temperature"]:
                 temperature = float(form["temperature"])
 
-                if not math.isfinite(temperature) or not 30 <= temperature <= 45:
+                if (
+                    not math.isfinite(temperature)
+                    or not 30 <= temperature <= 45
+                ):
                     errors.append("Temperature must be between 30 and 45 C.")
 
             if form["weight_kg"]:
                 weight = float(form["weight_kg"])
 
-                if not math.isfinite(weight) or not 0.3 <= weight <= 400:
+                if (
+                    not math.isfinite(weight)
+                    or not 0.3 <= weight <= 400
+                ):
                     errors.append("Weight must be between 0.3 and 400 kg.")
 
         except ValueError:

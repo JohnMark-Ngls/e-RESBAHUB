@@ -3,6 +3,7 @@
 notifications, and the shared request-detail / document-download pages."""
 
 from datetime import date
+import secrets
 
 from flask import (
     Blueprint,
@@ -39,6 +40,7 @@ from .utils import (
     upload_problem,
     validate_resident,
 )
+
 bp = Blueprint("resident", __name__)
 
 MAX_FILES = 3
@@ -661,9 +663,107 @@ def announcements():
     )
 
 
-@bp.route("/medicine")
+# ---------------------------------------------------------- medicine requests
+
+@bp.route("/medicine", methods=["GET", "POST"])
 @roles_required("resident", admin=False)
 def medicine():
+    resident = get_resident()
+
+    if request.method == "POST":
+        if (
+            current_app.config.get("REQUIRE_VERIFIED_FOR_REQUESTS")
+            and not resident["is_verified"]
+        ):
+            flash(
+                "Your account must be verified before you can request medicine.",
+                "warning",
+            )
+            return redirect(url_for("resident.medicine"))
+
+        medicine_id = request.form.get("medicine_id", type=int)
+        quantity = request.form.get("quantity", type=int)
+        purpose = (request.form.get("purpose") or "").strip()
+
+        if not medicine_id:
+            flash("Please select a medicine.", "danger")
+            return redirect(url_for("resident.medicine"))
+
+        if quantity is None or quantity < 1 or quantity > 1000:
+            flash(
+                "Quantity must be a whole number from 1 to 1000.",
+                "danger",
+            )
+            return redirect(url_for("resident.medicine"))
+
+        if not 3 <= len(purpose) <= 500:
+            flash(
+                "Purpose must be between 3 and 500 characters.",
+                "danger",
+            )
+            return redirect(url_for("resident.medicine"))
+
+        medicine_row = db.query(
+            """
+            SELECT id, name, stock_quantity
+            FROM medicine_inventory
+            WHERE id = ? AND is_active = 1
+            """,
+            (medicine_id,),
+            one=True,
+        )
+
+        if medicine_row is None:
+            flash("The selected medicine is unavailable.", "danger")
+            return redirect(url_for("resident.medicine"))
+
+        if medicine_row["stock_quantity"] < quantity:
+            flash(
+                "The requested quantity exceeds the current available stock. "
+                "Please check the stock and try again.",
+                "warning",
+            )
+            return redirect(url_for("resident.medicine"))
+
+        reference_no = "MR-" + secrets.token_hex(5).upper()
+
+        try:
+            db.execute(
+                """
+                INSERT INTO medicine_requests (
+                    reference_no, resident_id, medicine_id,
+                    quantity, purpose, status
+                )
+                VALUES (?, ?, ?, ?, ?, 'Pending')
+                """,
+                (
+                    reference_no,
+                    resident["id"],
+                    medicine_id,
+                    quantity,
+                    purpose,
+                ),
+            )
+        except IntegrityError:
+            db.rollback()
+            flash(
+                "Could not submit the medicine request. Please try again.",
+                "danger",
+            )
+            return redirect(url_for("resident.medicine"))
+
+        audit(
+            "medicine_request_created",
+            f"{reference_no}: resident #{resident['id']}, "
+            f"medicine #{medicine_id}, quantity {quantity}",
+        )
+
+        flash(
+            f"Medicine request submitted. Reference number: {reference_no}.",
+            "success",
+        )
+        return redirect(url_for("resident.medicine"))
+
     medicines = db.query(
         """
         SELECT id, condition_name, name AS medicine_name,
@@ -674,9 +774,24 @@ def medicine():
         """
     )
 
+    requests_list = db.query(
+        """
+        SELECT mr.id, mr.reference_no, mr.quantity, mr.purpose,
+               mr.status, mr.remarks, mr.created_at, mr.updated_at,
+               mi.name AS medicine_name, mi.strength, mi.form
+        FROM medicine_requests mr
+        JOIN medicine_inventory mi ON mi.id = mr.medicine_id
+        WHERE mr.resident_id = ?
+        ORDER BY mr.created_at DESC, mr.id DESC
+        LIMIT 100
+        """,
+        (resident["id"],),
+    )
+
     return render_template(
         "resident/medicine.html",
         medicines=medicines,
+        requests_list=requests_list,
     )
 
 
@@ -705,6 +820,8 @@ def notifications():
         "resident/notifications.html",
         rows=rows,
     )
+
+
 @bp.route("/appointments")
 @roles_required("resident", admin=False)
 def appointments():

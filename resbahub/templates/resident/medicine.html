@@ -1,5 +1,4 @@
-
-{% extends 'base.html' %}
+ {% extends 'base.html' %}
 
 {% block title %}Medicine{% endblock %}
 
@@ -14,43 +13,30 @@
     </p>
   </div>
 
+  <!-- AVAILABLE MEDICINES -->
   {% set groups = medicines|groupby('condition_name') %}
 
-  {% if groups %}
+  {% if medicines %}
     <div class="card medicine-list">
-
       {% for condition, items in groups %}
         <details class="medicine-condition" {% if loop.first %}open{% endif %}>
-
           <summary>
-            <span class="condition-title">
-              {{ condition }}
-            </span>
+            <span class="condition-title">{{ condition or 'Other Medicines' }}</span>
             <span class="condition-count">
-              {{ items|length }}
-              medicine{% if items|length != 1 %}s{% endif %}
+              {{ items|length }} medicine{% if items|length != 1 %}s{% endif %}
             </span>
           </summary>
 
           <div class="medicine-items">
             {% for medicine in items %}
               <div class="medicine-item">
-
                 <div class="medicine-info">
                   <h3>{{ medicine.medicine_name }}</h3>
 
                   <p class="medicine-details">
-                    {% if medicine.strength %}
-                      {{ medicine.strength }}
-                    {% endif %}
-
-                    {% if medicine.strength and medicine.form %}
-                      ·
-                    {% endif %}
-
-                    {% if medicine.form %}
-                      {{ medicine.form }}
-                    {% endif %}
+                    {% if medicine.strength %}{{ medicine.strength }}{% endif %}
+                    {% if medicine.strength and medicine.form %} · {% endif %}
+                    {% if medicine.form %}{{ medicine.form }}{% endif %}
                   </p>
 
                   {% if medicine.description %}
@@ -62,21 +48,15 @@
                   {% if medicine.stock_quantity > 0 %}
                     <span class="medicine-status available">Available</span>
                   {% else %}
-                    <span class="medicine-status unavailable">
-                      Out of stock
-                    </span>
+                    <span class="medicine-status unavailable">Out of stock</span>
                   {% endif %}
                 </div>
-
               </div>
             {% endfor %}
           </div>
-
         </details>
       {% endfor %}
-
     </div>
-
   {% else %}
     <div class="card medicine-empty">
       <h2>No medicines listed yet</h2>
@@ -87,11 +67,126 @@
     </div>
   {% endif %}
 
+  <!-- REQUEST MEDICINE FORM -->
+  <div class="card medicine-request-card">
+    <h2>Request Medicine</h2>
+    <p>Complete the form below to submit your medicine request.</p>
+
+<form method="POST" action="{{ url_for('resident.medicine') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-group">
+        <label for="medicine_id">Select Medicine</label>
+        <select id="medicine_id" name="medicine_id" required>
+          <option value="">-- Choose a medicine --</option>
+          {% for medicine in medicines %}
+            {% if medicine.stock_quantity > 0 %}
+              <option value="{{ medicine.id }}">
+                {{ medicine.medicine_name }}
+                {% if medicine.strength %} - {{ medicine.strength }}{% endif %}
+                {% if medicine.form %} ({{ medicine.form }}){% endif %}
+                — Stock: {{ medicine.stock_quantity }}
+              </option>
+            {% endif %}
+          {% endfor %}
+        </select>
+        {% if not medicines|selectattr('stock_quantity', 'gt', 0)|list %}
+          <small>There are currently no medicines in stock to request.</small>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="quantity">Quantity</label>
+        <input
+          type="number"
+          id="quantity"
+          name="quantity"
+          min="1"
+          max="1000"
+          step="1"
+          required
+          placeholder="Enter quantity"
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="purpose">Purpose / Reason for Request</label>
+        <textarea
+          id="purpose"
+          name="purpose"
+          rows="4"
+          minlength="3"
+          maxlength="500"
+          required
+          placeholder="Explain why you need this medicine"
+        ></textarea>
+      </div>
+
+      <button
+        type="submit"
+        {% if not medicines|selectattr('stock_quantity', 'gt', 0)|list %}disabled{% endif %}
+      >
+        Submit Medicine Request
+      </button>
+    </form>
+  </div>
+
+  <!-- RESIDENT'S REQUEST HISTORY -->
+  <div class="card medicine-history-card">
+    <h2>My Medicine Requests</h2>
+
+    {% if requests_list %}
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Reference No.</th>
+              <th>Medicine</th>
+              <th>Quantity</th>
+              <th>Purpose</th>
+              <th>Status</th>
+              <th>Remarks</th>
+              <th>Date Requested</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for request_item in requests_list %}
+              <tr>
+                <td>{{ request_item.reference_no }}</td>
+                <td>
+                  {{ request_item.medicine_name }}
+                  {% if request_item.strength %} {{ request_item.strength }}{% endif %}
+                  {% if request_item.form %} ({{ request_item.form }}){% endif %}
+                </td>
+                <td>{{ request_item.quantity }}</td>
+                <td>{{ request_item.purpose }}</td>
+                <td>
+                  <span class="medicine-status">
+                    {{ request_item.status }}
+                  </span>
+                </td>
+                <td>{{ request_item.remarks or '—' }}</td>
+                <td>
+                  {% if request_item.created_at %}
+                    {{ request_item.created_at }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p>You have not submitted any medicine requests yet.</p>
+    {% endif %}
+  </div>
+
   <div class="medicine-note">
     <strong>Important:</strong>
     Medicine availability may change as stock is updated.
-    Please coordinate with the Barangay Health Worker or Barangay Hall
-    staff for confirmation and proper guidance.
+    Submitting a request does not guarantee approval or immediate release.
+    Please coordinate with the Barangay Health Worker or Barangay Hall staff.
   </div>
 
 </div>

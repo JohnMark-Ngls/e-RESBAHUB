@@ -1,3 +1,4 @@
+
 """Database helpers for e-RESBAHUB using MariaDB."""
 
 import mysql.connector
@@ -161,10 +162,7 @@ def init_db():
             )
 
         # QR certificate verification table.
-        #
-        # NOTE:
-        # request_id and issued_by must use the same column types as
-        # requests.id and users.id in your existing database.
+        # Foreign key types must match the existing database schema.
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS certificate_verifications (
@@ -184,6 +182,40 @@ def init_db():
                     FOREIGN KEY (issued_by)
                     REFERENCES users(id)
                     ON DELETE SET NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+            """
+        )
+
+        # Medicine requests table.
+        # Stores requests submitted by residents for available medicines.
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS medicine_requests (
+                id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                reference_no VARCHAR(40) NOT NULL UNIQUE,
+                resident_id INT UNSIGNED NOT NULL,
+                medicine_id INT UNSIGNED NOT NULL,
+                quantity INT UNSIGNED NOT NULL,
+                purpose VARCHAR(500) NOT NULL,
+                status VARCHAR(30) NOT NULL DEFAULT 'Pending',
+                remarks VARCHAR(500) NULL,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                    ON UPDATE CURRENT_TIMESTAMP,
+
+                INDEX idx_mr_resident (resident_id),
+                INDEX idx_mr_status (status),
+                INDEX idx_mr_medicine (medicine_id),
+
+                CONSTRAINT fk_mr_resident
+                    FOREIGN KEY (resident_id)
+                    REFERENCES residents(id)
+                    ON DELETE CASCADE,
+
+                CONSTRAINT fk_mr_medicine
+                    FOREIGN KEY (medicine_id)
+                    REFERENCES medicine_inventory(id)
+                    ON DELETE RESTRICT
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
             """
         )

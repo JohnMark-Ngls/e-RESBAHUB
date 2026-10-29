@@ -1,0 +1,153 @@
+
+{% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
+
+{% block title %}Medicine Requests{% endblock %}
+
+{% block content %}
+<div class="row spread">
+  <div>
+    <h1>Medicine Requests</h1>
+    <p class="muted">
+      Review medicine requests submitted by residents.
+    </p>
+  </div>
+
+  <a class="btn secondary" href="{{ url_for('health.medicines') }}">
+    Medicine Inventory
+  </a>
+</div>
+
+<div class="card mt">
+  <form method="get" action="{{ url_for('health.medicine_requests') }}">
+    <div class="row">
+      <div class="field">
+        <label for="q">Search</label>
+        <input
+          id="q"
+          name="q"
+          type="text"
+          value="{{ q }}"
+          placeholder="Resident, medicine, or reference"
+        >
+      </div>
+
+      <div class="field">
+        <label for="status">Status</label>
+        <select id="status" name="status">
+          <option value="">All statuses</option>
+          <option value="Pending" {% if status == 'Pending' %}selected{% endif %}>Pending</option>
+          <option value="Approved" {% if status == 'Approved' %}selected{% endif %}>Approved</option>
+          <option value="Rejected" {% if status == 'Rejected' %}selected{% endif %}>Rejected</option>
+        </select>
+      </div>
+
+      <div>
+        <button class="btn" type="submit">Filter</button>
+        <a class="btn secondary" href="{{ url_for('health.medicine_requests') }}">Clear</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="card mt">
+  <h2>Resident requests</h2>
+
+  {% if rows %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Reference</th>
+          <th>Resident</th>
+          <th>Medicine</th>
+          <th>Qty.</th>
+          <th>Purpose</th>
+          <th>Stock</th>
+          <th>Status</th>
+          <th>Review request</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td>{{ r.reference_no }}</td>
+
+          <td>
+            {{ r.last_name }}, {{ r.first_name }}
+            {% if r.middle_name %} {{ r.middle_name }}{% endif %}
+            {% if r.suffix %} {{ r.suffix }}{% endif %}
+            <div class="muted small">@{{ r.username }}</div>
+          </td>
+
+          <td>
+            {{ r.medicine_name }}
+            {% if r.strength %} {{ r.strength }}{% endif %}
+            {% if r.form %} ({{ r.form }}){% endif %}
+          </td>
+
+          <td>{{ r.quantity }}</td>
+          <td>{{ r.purpose }}</td>
+          <td>{{ r.stock_quantity }}</td>
+          <td>
+            <strong>{{ r.status }}</strong>
+            {% if r.remarks %}
+            <div class="muted small">Remarks: {{ r.remarks }}</div>
+            {% endif %}
+            <div class="muted small">{{ r.created_at|dt }}</div>
+          </td>
+
+          <td>
+            {% if r.status == 'Pending' %}
+            <form
+              method="post"
+              action="{{ url_for('health.medicine_request_status', request_id=r.id) }}"
+            >
+              {{ csrf() }}
+
+              <label for="remarks-{{ r.id }}">Remarks</label>
+              <textarea
+                id="remarks-{{ r.id }}"
+                name="remarks"
+                maxlength="500"
+                rows="2"
+                placeholder="Optional for approval; required for rejection"
+              ></textarea>
+
+              <div class="row">
+                <button
+                  class="btn sm"
+                  type="submit"
+                  name="status"
+                  value="Approved"
+                >
+                  Approve
+                </button>
+
+                <button
+                  class="btn sm secondary"
+                  type="submit"
+                  name="status"
+                  value="Rejected"
+                  onclick="return confirm('Reject this medicine request?');"
+                >
+                  Reject
+                </button>
+              </div>
+            </form>
+            {% else %}
+            <span class="muted">Already reviewed</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% else %}
+  <p class="muted">No medicine requests found.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,46 +1,223 @@
+
 {% extends 'base.html' %}
 {% from '_macros.html' import badge, dashboard_clock, staff_presence_card %}
+
 {% block title %}Health Center Dashboard{% endblock %}
+
 {% block content %}
+{% set low_stock = medicine_inventory | selectattr('is_active') | selectattr('stock_quantity', 'le', 10) | list %}
+{% set out_of_stock = medicine_inventory | selectattr('is_active') | selectattr('stock_quantity', 'equalto', 0) | list %}
+
 <div class="row spread dashboard-heading">
-  <h1>Health center dashboard</h1>
+  <div>
+    <h1>Health Center Dashboard</h1>
+    <p class="muted">Patient care, appointments, and medicine monitoring.</p>
+  </div>
   {{ dashboard_clock() }}
 </div>
+
 {{ staff_presence_card(is_on_site) }}
+
+{% if low_stock %}
+<div class="card" style="border-left: 4px solid #d97706;">
+  <div class="row spread">
+    <div>
+      <h2 style="margin-top: 0;">Medicine stock alert</h2>
+      <p class="muted">
+        {{ low_stock|length }} active medicine(s) have 10 or fewer units remaining.
+      </p>
+      {% if out_of_stock %}
+      <p><strong>{{ out_of_stock|length }}</strong> medicine(s) are out of stock.</p>
+      {% endif %}
+    </div>
+    <a class="btn sm" href="{{ url_for('health.medicines') }}">
+      Review stock
+    </a>
+  </div>
+</div>
+{% endif %}
+
 <div class="grid cols-4">
-  <div class="card stat"><div class="num">{{ appt_counts.values()|sum }}</div><div class="lbl">Appointments today</div></div>
-  <div class="card stat"><div class="num">{{ appt_counts.get('Waiting', 0) }}</div><div class="lbl">Waiting now</div></div>
-  <div class="card stat"><div class="num">{{ total_patients }}</div><div class="lbl">Registered patients</div></div>
-  <div class="card stat"><div class="num">{{ visits_month }}</div><div class="lbl">Visits this month</div></div>
+  <div class="card stat">
+    <div class="num">{{ total_patients }}</div>
+    <div class="lbl">Registered patients</div>
+  </div>
+
+  <div class="card stat">
+    <div class="num">{{ appt_counts.values()|sum }}</div>
+    <div class="lbl">Appointments today</div>
+  </div>
+
+  <div class="card stat">
+    <div class="num">{{ appt_counts.get('Waiting', 0) }}</div>
+    <div class="lbl">Waiting patients</div>
+  </div>
+
+  <div class="card stat">
+    <div class="num">{{ visits_month }}</div>
+    <div class="lbl">Visits this month</div>
+  </div>
 </div>
+
 <div class="card">
-  <div class="row spread"><h2>Medicine inventory</h2>
-    <a class="btn sm" href="{{ url_for('health.medicines') }}">Manage inventory</a></div>
+  <div class="row spread">
+    <div>
+      <h2>Quick actions</h2>
+      <p class="muted">Common Health Center tasks</p>
+    </div>
+  </div>
+
+  <div class="row" style="gap: 10px; flex-wrap: wrap;">
+    <a class="btn" href="{{ url_for('health.patient_new') }}">
+      + Register patient
+    </a>
+    <a class="btn" href="{{ url_for('health.appointment_new') }}">
+      + Book appointment
+    </a>
+    <a class="btn secondary" href="{{ url_for('health.patients') }}">
+      Find patient
+    </a>
+    <a class="btn secondary" href="{{ url_for('health.visits') }}">
+      View visit records
+    </a>
+    <a class="btn secondary" href="{{ url_for('health.medicines') }}">
+      Manage medicines
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="row spread">
+    <div>
+      <h2>Today's patient queue</h2>
+      <p class="muted">Monitor appointments and record completed consultations.</p>
+    </div>
+    <a class="btn sm" href="{{ url_for('health.appointments') }}">
+      View appointments
+    </a>
+  </div>
+
+  {% if queue %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Queue #</th>
+          <th>Patient</th>
+          <th>Service</th>
+          <th>Time</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in queue %}
+        <tr>
+          <td><strong>{{ a.queue_no }}</strong></td>
+          <td>
+            <a href="{{ url_for('health.patient_detail', patient_id=a.patient_id) }}">
+              {{ a.last_name }}, {{ a.first_name }}
+            </a>
+            <div class="muted small">{{ a.patient_no }}</div>
+          </td>
+          <td>{{ a.service_type }}</td>
+          <td>{{ a.appointment_time or '-' }}</td>
+          <td>{{ badge(a.status) }}</td>
+          <td>
+            {% if a.status != 'Completed' and a.status != 'Cancelled' %}
+            <a class="btn sm"
+               href="{{ url_for('health.visit_new', patient_id=a.patient_id, appointment_id=a.id) }}">
+              Record visit
+            </a>
+            {% else %}
+            <span class="muted small">No action needed</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">No patients are currently in today's queue.</p>
+  <a class="btn sm" href="{{ url_for('health.appointment_new') }}">
+    Book an appointment
+  </a>
+  {% endif %}
+</div>
+
+<div class="card">
+  <div class="row spread">
+    <div>
+      <h2>Medicine inventory</h2>
+      <p class="muted">
+        Active medicines with 10 or fewer units are highlighted below.
+      </p>
+    </div>
+    <a class="btn sm" href="{{ url_for('health.medicines') }}">
+      Manage inventory
+    </a>
+  </div>
+
   {% if medicine_inventory %}
-  <div class="table-wrap"><table>
-    <tr><th>Medicine</th><th>Stock</th><th>Resident availability</th><th>Visibility</th></tr>
-    {% for medicine in medicine_inventory %}
-    <tr>
-      <td>{{ medicine.name }}</td>
-      <td>{{ medicine.stock_quantity }}</td>
-      <td>{{ 'Available' if medicine.stock_quantity > 0 else 'Out of stock' }}</td>
-      <td>{{ 'Shown to residents' if medicine.is_active else 'Hidden' }}</td>
-    </tr>
-    {% endfor %}
-  </table></div>
-  {% else %}<p class="muted">No medicines have been added yet.</p>{% endif %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Medicine</th>
+          <th>Stock</th>
+          <th>Availability</th>
+          <th>Visibility</th>
+          <th>Last updated</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for medicine in medicine_inventory %}
+        <tr>
+          <td>
+            <strong>{{ medicine.name }}</strong>
+            {% if medicine.condition_name is defined and medicine.condition_name %}
+            <div class="muted small">{{ medicine.condition_name }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <strong>{{ medicine.stock_quantity }}</strong>
+            {% if medicine.is_active and medicine.stock_quantity <= 10 %}
+            <div class="small" style="color: #b45309;">
+              {% if medicine.stock_quantity == 0 %}
+              Out of stock
+              {% else %}
+              Low stock
+              {% endif %}
+            </div>
+            {% endif %}
+          </td>
+          <td>
+            {% if medicine.stock_quantity > 0 %}
+              Available
+            {% else %}
+              Out of stock
+            {% endif %}
+          </td>
+          <td>
+            {% if medicine.is_active %}
+              Visible to residents
+            {% else %}
+              Hidden
+            {% endif %}
+          </td>
+          <td>{{ medicine.updated_at|dt }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="muted">No medicines have been added to the inventory yet.</p>
+  <a class="btn sm" href="{{ url_for('health.medicines') }}">
+    Add medicine
+  </a>
+  {% endif %}
 </div>
-<div class="card">
-  <div class="row spread"><h2>Today's queue</h2>
-    <span><a class="btn sm" href="{{ url_for('health.appointment_new') }}">+ Book appointment</a>
-    <a class="btn sm secondary" href="{{ url_for('health.patient_new') }}">+ New patient</a></span></div>
-  {% if queue %}<div class="table-wrap"><table>
-    <tr><th>Queue #</th><th>Patient</th><th>Service</th><th>Time</th><th>Status</th><th></th></tr>
-    {% for a in queue %}
-    <tr><td><strong>{{ a.queue_no }}</strong></td><td>{{ a.last_name }}, {{ a.first_name }} <span class="muted small">{{ a.patient_no }}</span></td>
-    <td>{{ a.service_type }}</td><td>{{ a.appointment_time or '-' }}</td><td>{{ badge(a.status) }}</td>
-    <td><a class="btn sm" href="{{ url_for('health.visit_new', patient_id=a.patient_id, appointment_id=a.id) }}">Record visit</a></td></tr>
-    {% endfor %}
-  </table></div>{% else %}<p class="muted">Nobody in the queue right now.</p>{% endif %}
-</div>
+
 {% endblock %}

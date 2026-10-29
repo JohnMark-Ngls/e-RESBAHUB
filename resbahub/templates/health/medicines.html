@@ -6,7 +6,15 @@
   <div class="medicine-heading">
     <h1>Medicine inventory</h1>
     <p>Maintain medicine details and stock availability for residents.</p>
-    <a class="btn secondary" href="{{ url_for('health.dashboard') }}">Health Center dashboard</a>
+    <div class="row">
+  <a class="btn secondary" href="{{ url_for('health.dashboard') }}">
+    Health Center dashboard
+  </a>
+
+  <a class="btn" href="{{ url_for('health.medicine_requests') }}">
+    Medicine Requests
+  </a>
+</div>
   </div>
   <div class="card">
     <h2>Add medicine</h2>

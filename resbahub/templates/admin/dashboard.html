@@ -1,29 +1,83 @@
+
 {% extends 'base.html' %}
 {% from '_macros.html' import dashboard_clock, staff_presence_card %}
+
 {% block title %}Administrator{% endblock %}
+
 {% block content %}
 <div class="row spread dashboard-heading">
   <h1>Administrator</h1>
   {{ dashboard_clock() }}
 </div>
+
 {{ staff_presence_card(is_on_site) }}
+
 <div class="grid cols-4">
   {% for key, label in ROLE_LABELS.items() %}
-  <div class="card stat"><div class="num">{{ by_role.get(key, 0) }}</div><div class="lbl">{{ label }} accounts</div></div>
+  <div class="card stat">
+    <div class="num">{{ by_role.get(key, 0) }}</div>
+    <div class="lbl">{{ label }} accounts</div>
+  </div>
   {% endfor %}
 </div>
+
 <div class="row">
-  <a class="btn" href="{{ url_for('admin.users') }}">Manage users</a>
-  <a class="btn secondary" href="{{ url_for('admin.user_new') }}">+ New staff account</a>
-  <a class="btn secondary" href="{{ url_for('admin.services') }}">Barangay services</a>
-  <a class="btn secondary" href="{{ url_for('admin.audit_log') }}">Audit log</a>
+  <a class="btn" href="{{ url_for('admin.users') }}">
+    Manage users
+  </a>
+
+  <a class="btn secondary" href="{{ url_for('admin.user_new') }}">
+    + New staff account
+  </a>
+
+  <a class="btn secondary" href="{{ url_for('admin.services') }}">
+    Barangay services
+  </a>
+
+  <a class="btn secondary" href="{{ url_for('admin.medicine_requests') }}">
+    Medicine Requests
+  </a>
+
+  <a class="btn secondary" href="{{ url_for('admin.audit_log') }}">
+    Audit log
+  </a>
 </div>
+
 <div class="card mt">
   <h2>Recent activity</h2>
-  {% if inactive %}<p class="muted small">{{ inactive }} deactivated account(s).</p>{% endif %}
-  <div class="table-wrap"><table>
-    <tr><th>When</th><th>User</th><th>Action</th><th>Detail</th></tr>
-    {% for a in recent %}<tr><td>{{ a.created_at|dt }}</td><td>{{ a.username or '-' }}</td><td>{{ a.action }}</td><td>{{ a.detail }}</td></tr>{% endfor %}
-  </table></div>
+
+  {% if inactive %}
+  <p class="muted small">
+    {{ inactive }} deactivated account(s).
+  </p>
+  {% endif %}
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>User</th>
+          <th>Action</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {% for a in recent %}
+        <tr>
+          <td>{{ a.created_at|dt }}</td>
+          <td>{{ a.username or '-' }}</td>
+          <td>{{ a.action }}</td>
+          <td>{{ a.detail }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4">No recent activity found.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 </div>
 {% endblock %}
