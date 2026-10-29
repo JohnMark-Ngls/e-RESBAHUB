@@ -47,8 +47,78 @@
                             class="rounded-circle bg-light border mx-auto d-flex align-items-center justify-content-center"
                             style="width: 130px; height: 130px;"
                         >
-                            <i class="bi bi-person-fill" style="font-size: 70px;"></i>
+                            <i
+                                class="bi bi-person-fill"
+                                style="font-size: 70px;"
+                            ></i>
                         </div>
+                    {% endif %}
+
+                    <!-- UPLOAD PROFILE PICTURE -->
+                    <form
+                        method="POST"
+                        action="{{ url_for('profile.upload') }}"
+                        enctype="multipart/form-data"
+                        class="mt-3 mb-3"
+                    >
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="{{ csrf_token() }}"
+                        >
+
+                        <div class="mb-2">
+                            <label
+                                for="profile_picture"
+                                class="form-label"
+                            >
+                                Profile Picture
+                            </label>
+
+                            <input
+                                type="file"
+                                class="form-control"
+                                id="profile_picture"
+                                name="profile_picture"
+                                accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                                required
+                            >
+                        </div>
+
+                        <small class="text-muted d-block mb-2">
+                            PNG, JPG, or JPEG. Maximum size: 2 MB.
+                        </small>
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                        >
+                            <i class="bi bi-upload"></i>
+                            Upload Picture
+                        </button>
+                    </form>
+
+                    <!-- REMOVE PROFILE PICTURE -->
+                    {% if user.profile_picture %}
+                        <form
+                            method="POST"
+                            action="{{ url_for('profile.remove') }}"
+                            onsubmit="return confirm('Are you sure you want to remove your profile picture?');"
+                        >
+                            <input
+                                type="hidden"
+                                name="csrf_token"
+                                value="{{ csrf_token() }}"
+                            >
+
+                            <button
+                                type="submit"
+                                class="btn btn-outline-danger btn-sm"
+                            >
+                                <i class="bi bi-trash"></i>
+                                Remove Picture
+                            </button>
+                        </form>
                     {% endif %}
 
                     <h5 class="mt-3">
@@ -63,6 +133,7 @@
 
                 <hr>
 
+                <!-- PROFILE DETAILS -->
                 <div class="mb-3">
                     <strong>Full Name:</strong>
                     <span>{{ user.full_name or 'Not set' }}</span>
@@ -86,19 +157,43 @@
                 {% if user.role in ['admin', 'barangay_staff', 'health_staff'] %}
                     <div class="mb-3">
                         <strong>Position/Title:</strong>
-                        <span>{{ user.position_title or 'Not set' }}</span>
+                        <span>
+                            {{ user.position_title or 'Not set' }}
+                        </span>
                     </div>
                 {% endif %}
 
+                <!-- PROFILE NAVIGATION -->
                 <div class="d-flex justify-content-between flex-wrap gap-2 mt-4">
 
-                    <a
-                        href="{{ url_for('resident.dashboard') }}"
-                        class="btn btn-secondary"
-                    >
-                        <i class="bi bi-arrow-left"></i>
-                        Back to Dashboard
-                    </a>
+                    <!-- ROLE-BASED DASHBOARD LINK -->
+                    {% if g.user and g.user.role == 'admin' %}
+                        <a
+                            href="{{ url_for('admin.dashboard') }}"
+                            class="btn btn-secondary"
+                        >
+                            <i class="bi bi-arrow-left"></i>
+                            Back to Dashboard
+                        </a>
+
+                    {% elif g.user and g.user.role == 'resident' %}
+                        <a
+                            href="{{ url_for('resident.dashboard') }}"
+                            class="btn btn-secondary"
+                        >
+                            <i class="bi bi-arrow-left"></i>
+                            Back to Dashboard
+                        </a>
+
+                    {% elif g.user and g.user.role in ['barangay_staff', 'health_staff'] %}
+                        <a
+                            href="{{ url_for('admin.dashboard') }}"
+                            class="btn btn-secondary"
+                        >
+                            <i class="bi bi-arrow-left"></i>
+                            Back to Dashboard
+                        </a>
+                    {% endif %}
 
                     <a
                         href="{{ url_for('profile.edit') }}"
@@ -113,8 +208,10 @@
             {% else %}
 
                 <!-- EDIT PROFILE FORM -->
-                <form method="POST" action="{{ url_for('profile.edit') }}">
-
+                <form
+                    method="POST"
+                    action="{{ url_for('profile.edit') }}"
+                >
                     <input
                         type="hidden"
                         name="csrf_token"
@@ -122,8 +219,12 @@
                     >
 
                     <div class="mb-3">
-                        <label for="full_name" class="form-label">
-                            Full Name <span class="text-danger">*</span>
+                        <label
+                            for="full_name"
+                            class="form-label"
+                        >
+                            Full Name
+                            <span class="text-danger">*</span>
                         </label>
 
                         <input
@@ -139,8 +240,12 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="username" class="form-label">
-                            Username <span class="text-danger">*</span>
+                        <label
+                            for="username"
+                            class="form-label"
+                        >
+                            Username
+                            <span class="text-danger">*</span>
                         </label>
 
                         <input
@@ -156,8 +261,12 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="email" class="form-label">
-                            Email Address <span class="text-danger">*</span>
+                        <label
+                            for="email"
+                            class="form-label"
+                        >
+                            Email Address
+                            <span class="text-danger">*</span>
                         </label>
 
                         <input
@@ -172,10 +281,13 @@
                         >
                     </div>
 
-                    <!-- Position/Title: Staff and Admin only -->
+                    <!-- POSITION/TITLE: ADMIN AND STAFF ONLY -->
                     {% if g.user and g.user.role in ['admin', 'barangay_staff', 'health_staff'] %}
                         <div class="mb-3">
-                            <label for="position_title" class="form-label">
+                            <label
+                                for="position_title"
+                                class="form-label"
+                            >
                                 Position/Title
                             </label>
 
@@ -190,7 +302,8 @@
                             >
 
                             <div class="form-text">
-                                Only authorized staff and administrators can manage this field.
+                                Only authorized staff and administrators
+                                can manage this field.
                             </div>
                         </div>
                     {% endif %}
@@ -200,6 +313,7 @@
                         Your role and password cannot be changed here.
                     </p>
 
+                    <!-- FORM BUTTONS -->
                     <div class="d-flex justify-content-between flex-wrap gap-2 mt-4">
 
                         <a
@@ -210,7 +324,10 @@
                             Cancel
                         </a>
 
-                        <button type="submit" class="btn btn-primary">
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                        >
                             <i class="bi bi-check-circle"></i>
                             Save Changes
                         </button>
