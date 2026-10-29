@@ -96,12 +96,13 @@ def create_app(test_config=None):
 
     app.teardown_appcontext(db.close_db)
 
-    # Import all application blueprints, including QR verification.
+    # Import all application blueprints.
     from . import (
         admin,
         auth,
         health,
         presence,
+        profile,
         reports,
         resident,
         staff,
@@ -118,11 +119,13 @@ def create_app(test_config=None):
         reports,
         presence,
         verification,
+        profile,
     ):
         app.register_blueprint(module.bp)
 
     @app.before_request
     def load_user():
+        """Load the active user, including their profile picture."""
         g.user = None
 
         if request.endpoint == "static":
@@ -133,7 +136,14 @@ def create_app(test_config=None):
         if user_id is not None:
             user = db.query(
                 """
-                SELECT id, username, email, full_name, role, is_active
+                SELECT
+                    id,
+                    username,
+                    email,
+                    full_name,
+                    role,
+                    is_active,
+                    profile_picture
                 FROM users
                 WHERE id = ?
                 """,
@@ -148,6 +158,7 @@ def create_app(test_config=None):
 
     @app.before_request
     def csrf_protect():
+        """Protect state-changing requests against CSRF attacks."""
         if request.method in ("POST", "PUT", "PATCH", "DELETE"):
             expected = session.get("csrf_token")
             sent = (
@@ -168,6 +179,7 @@ def create_app(test_config=None):
 
     @app.after_request
     def security_headers(response):
+        """Add security headers to application responses."""
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "same-origin"

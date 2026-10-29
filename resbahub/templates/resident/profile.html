@@ -1,28 +1,100 @@
+
 {% extends 'base.html' %}
 {% from '_macros.html' import csrf, input, select %}
+
 {% block title %}My Profile{% endblock %}
+
 {% block content %}
-<h1>My profile</h1>
+<h1>My Profile</h1>
+
+<div class="card">
+  <h2>Profile Picture</h2>
+
+  <div class="profile-picture-section" style="margin-bottom: 24px;">
+    {% if current_user and current_user.profile_picture %}
+      <img
+        src="{{ url_for('profile.image', filename=current_user.profile_picture) }}"
+        alt="Your profile picture"
+        width="120"
+        height="120"
+        style="width: 120px; height: 120px; object-fit: cover; border-radius: 50%;"
+      >
+    {% else %}
+      <div
+        style="width: 120px; height: 120px; border-radius: 50%; background: #e9ecef; display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: bold;"
+        aria-label="Default profile picture"
+      >
+        {{ (current_user.full_name or current_user.username or 'U')[0]|upper }}
+      </div>
+    {% endif %}
+
+    <form
+      method="post"
+      action="{{ url_for('profile.upload') }}"
+      enctype="multipart/form-data"
+      style="margin-top: 16px;"
+    >
+      {{ csrf() }}
+
+      <label for="profile_picture">Choose profile picture</label>
+      <input
+        type="file"
+        id="profile_picture"
+        name="profile_picture"
+        accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+        required
+      >
+
+      <p class="muted">PNG, JPG, or JPEG. Maximum size: 2 MB.</p>
+
+      <button class="btn" type="submit">Upload Picture</button>
+    </form>
+
+    {% if current_user and current_user.profile_picture %}
+      <form
+        method="post"
+        action="{{ url_for('profile.remove') }}"
+        onsubmit="return confirm('Are you sure you want to remove your profile picture?');"
+        style="margin-top: 8px;"
+      >
+        {{ csrf() }}
+        <button class="btn" type="submit">Remove Picture</button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
 <div class="card">
   {% if resident.is_verified %}
-    <div class="notice">Your account is <strong>verified</strong>. Name, birthdate and sex are locked. To correct them, please visit the barangay hall.</div>
+    <div class="notice">
+      Your account is <strong>verified</strong>. Name, birthdate and sex are locked.
+      To correct them, please visit the barangay hall.
+    </div>
   {% else %}
-    <div class="notice warn">Your account is <strong>not yet verified</strong>. You may still correct your personal details below.</div>
+    <div class="notice warn">
+      Your account is <strong>not yet verified</strong>. You may still correct
+      your personal details below.
+    </div>
   {% endif %}
+
   <form method="post">
     {{ csrf() }}
+
     {% set lock = 'readonly' if not unlocked else '' %}
+
     <div class="form-grid">
       {{ input('first_name', 'First name', form.first_name, required=True, attrs=lock) }}
       {{ input('middle_name', 'Middle name', form.middle_name, attrs=lock) }}
       {{ input('last_name', 'Last name', form.last_name, required=True, attrs=lock) }}
       {{ input('suffix', 'Suffix', form.suffix, attrs=lock) }}
       {{ input('birthdate', 'Birthdate', form.birthdate, 'date', required=True, attrs=lock) }}
+
       {% if unlocked %}
         {{ select('sex', 'Sex', sex_options, form.sex, required=True) }}
       {% else %}
         {{ input('sex_display', 'Sex', form.sex, attrs='readonly') }}
       {% endif %}
+
       {{ select('civil_status', 'Civil status', civil_options, form.civil_status, required=True) }}
       {{ input('contact_no', 'Mobile number', form.contact_no, 'tel', required=True) }}
       {{ input('email', 'Email', form.email, 'email', required=True) }}
@@ -30,7 +102,8 @@
       {{ input('address', 'Home address', form.address, required=True, cls='full') }}
       {{ input('occupation', 'Occupation', form.occupation) }}
     </div>
-    <button class="btn" type="submit">Save changes</button>
+
+    <button class="btn" type="submit">Save Changes</button>
   </form>
 </div>
 {% endblock %}

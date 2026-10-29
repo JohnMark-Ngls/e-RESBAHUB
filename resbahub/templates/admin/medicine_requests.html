@@ -1,5 +1,6 @@
 
 {% extends 'base.html' %}
+{% from '_macros.html' import csrf %}
 
 {% block title %}Medicine Requests{% endblock %}
 
@@ -47,7 +48,7 @@
 <div class="card mt">
   <h2>Submitted requests</h2>
   <p class="muted small">
-    Showing up to 500 requests, newest first. This page does not change medicine stock or request status.
+    Review each request and approve or reject pending requests.
   </p>
 
   {% if rows %}
@@ -62,12 +63,15 @@
           <th>Purpose</th>
           <th>Status</th>
           <th>Date requested</th>
+          <th>Action</th>
         </tr>
       </thead>
+
       <tbody>
         {% for r in rows %}
         <tr>
           <td>{{ r.reference_no }}</td>
+
           <td>
             {{ r.first_name }}
             {% if r.middle_name %}{{ r.middle_name }} {% endif %}
@@ -75,20 +79,91 @@
             {% if r.suffix %} {{ r.suffix }}{% endif %}
             <div class="muted small">@{{ r.username }}</div>
           </td>
+
           <td>
             {{ r.medicine_name }}
             {% if r.strength %} — {{ r.strength }}{% endif %}
             {% if r.form %} ({{ r.form }}){% endif %}
           </td>
+
           <td>{{ r.quantity }}</td>
           <td>{{ r.purpose }}</td>
-          <td>{{ r.status }}</td>
+          <td>
+            {% if r.status == 'Pending' %}
+              <span class="badge" style="background:#fef3c7;color:#92400e;">
+                Pending
+              </span>
+            {% elif r.status == 'Approved' %}
+              <span class="badge" style="background:#dcfce7;color:#166534;">
+                Approved
+              </span>
+            {% elif r.status == 'Rejected' %}
+              <span class="badge" style="background:#fee2e2;color:#991b1b;">
+                Rejected
+              </span>
+            {% else %}
+              {{ r.status }}
+            {% endif %}
+          </td>
+
           <td>{{ r.created_at|dt }}</td>
+
+          <td>
+            {% if r.status == 'Pending' %}
+            <div style="min-width: 190px;">
+              <form
+                method="POST"
+                action="{{ url_for('admin.medicine_request_approve', request_id=r.id) }}"
+                style="margin-bottom: 10px;"
+                onsubmit="return confirm('Approve this medicine request?');"
+              >
+                {{ csrf() }}
+                <label for="approve-remarks-{{ r.id }}">Remarks (optional)</label>
+                <input
+                  id="approve-remarks-{{ r.id }}"
+                  type="text"
+                  name="remarks"
+                  maxlength="500"
+                  placeholder="Optional remarks"
+                >
+                <button class="btn sm" type="submit" style="margin-top: 6px;">
+                  Approve
+                </button>
+              </form>
+
+              <form
+                method="POST"
+                action="{{ url_for('admin.medicine_request_reject', request_id=r.id) }}"
+                onsubmit="return confirm('Reject this medicine request?');"
+              >
+                {{ csrf() }}
+                <label for="reject-remarks-{{ r.id }}">Reason for rejection</label>
+                <input
+                  id="reject-remarks-{{ r.id }}"
+                  type="text"
+                  name="remarks"
+                  maxlength="500"
+                  required
+                  placeholder="Enter reason"
+                >
+                <button
+                  class="btn sm"
+                  type="submit"
+                  style="margin-top: 6px; background: #b91c1c; color: white;"
+                >
+                  Reject
+                </button>
+              </form>
+            </div>
+            {% else %}
+              <span class="muted small">Already processed</span>
+            {% endif %}
+          </td>
         </tr>
+
         <tr>
-          <td colspan="7">
-            <strong>Remarks:</strong>
-            {{ r.remarks or 'No remarks' }}
+          <td colspan="8">
+            <strong>Remarks:</strong> {{ r.remarks or 'No remarks' }}
           </td>
         </tr>
         {% endfor %}

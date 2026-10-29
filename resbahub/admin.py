@@ -1,4 +1,5 @@
-"""Administrator: users, services and the audit log."""
+
+"""Administrator: users, services, medicine requests, and audit log."""
 
 from flask import (
     Blueprint,
@@ -127,21 +128,23 @@ def user_new():
 
         if not USERNAME_RE.fullmatch(form["username"]):
             errors.append(
-                "Username must be 4-30 characters: "
-                "letters, numbers, dot or underscore."
+                "Username must be 4-30 characters and contain only "
+                "letters, numbers, periods, or underscores."
             )
 
         if not EMAIL_RE.fullmatch(form["email"]):
-            errors.append("Please enter a valid email.")
+            errors.append("Please enter a valid email address.")
 
         if not (2 <= len(form["full_name"]) <= 100):
-            errors.append("Full name must be 2-100 characters.")
+            errors.append("Full name must be between 2 and 100 characters.")
 
         if form["role"] not in STAFF_CHOICES:
-            errors.append("Please choose an access level.")
+            errors.append("Please choose a valid access level.")
 
         if not form["position_title"] or len(form["position_title"]) > 100:
-            errors.append("Enter a role or position title up to 100 characters.")
+            errors.append(
+                "Enter a position title of up to 100 characters."
+            )
 
         problem = password_problem(password)
         if problem:
@@ -161,7 +164,7 @@ def user_new():
             )
 
             if username_exists or email_exists:
-                errors.append("That username or email already exists.")
+                errors.append("That username or email address already exists.")
 
         if errors:
             for error in errors:
@@ -171,8 +174,12 @@ def user_new():
                 db.execute(
                     """
                     INSERT INTO users (
-                        username, email, full_name, position_title,
-                        password_hash, role
+                        username,
+                        email,
+                        full_name,
+                        position_title,
+                        password_hash,
+                        role
                     )
                     VALUES (?, ?, ?, ?, ?, ?)
                     """,
@@ -188,16 +195,19 @@ def user_new():
 
                 audit(
                     "user_create",
-                    f"{form['username']} ({form['position_title']}; access: {form['role']})",
+                    (
+                        f"{form['username']} "
+                        f"({form['position_title']}; access: {form['role']})"
+                    ),
                 )
 
-                flash("User account created.", "success")
+                flash("User account created successfully.", "success")
                 return redirect(url_for("admin.users"))
 
             except IntegrityError:
                 db.rollback()
                 flash(
-                    "That username or email already exists.",
+                    "That username or email address already exists.",
                     "danger",
                 )
 
@@ -247,18 +257,18 @@ def user_edit(user_id):
         errors = []
 
         if not EMAIL_RE.fullmatch(form["email"]):
-            errors.append("Please enter a valid email.")
+            errors.append("Please enter a valid email address.")
 
         if not (2 <= len(form["full_name"]) <= 100):
-            errors.append("Full name must be 2-100 characters.")
+            errors.append("Full name must be between 2 and 100 characters.")
 
         if user["role"] == "resident":
             form["role"] = "resident"
         elif form["role"] not in STAFF_CHOICES:
-            errors.append("Please choose an access level.")
+            errors.append("Please choose a valid access level.")
 
         if len(form["position_title"]) > 100:
-            errors.append("Role or position title must be 100 characters or fewer.")
+            errors.append("Position title must not exceed 100 characters.")
 
         if is_self and (
             not form["is_active"] or form["role"] != user["role"]
@@ -280,7 +290,7 @@ def user_edit(user_id):
         )
 
         if email_exists:
-            errors.append("That email is used by another account.")
+            errors.append("That email address is already used by another account.")
 
         if errors:
             for error in errors:
@@ -338,7 +348,7 @@ def user_edit(user_id):
             except IntegrityError:
                 conn.rollback()
                 flash(
-                    "That email is already used by another account.",
+                    "That email address is already used by another account.",
                     "danger",
                 )
                 return render_template(
@@ -361,7 +371,7 @@ def user_edit(user_id):
             finally:
                 cursor.close()
 
-            flash("User updated.", "success")
+            flash("User account updated successfully.", "success")
             return redirect(url_for("admin.users"))
 
     return render_template(
@@ -382,7 +392,11 @@ def user_edit(user_id):
 @roles_required()
 def user_delete(user_id):
     user = db.query(
-        "SELECT id, username, full_name, role, is_active FROM users WHERE id = ?",
+        """
+        SELECT id, username, full_name, role, is_active
+        FROM users
+        WHERE id = ?
+        """,
         (user_id,),
         one=True,
     )
@@ -403,8 +417,12 @@ def user_delete(user_id):
             """,
             one=True,
         )["c"]
+
         if active_admins <= 1:
-            flash("You cannot delete the last active administrator.", "danger")
+            flash(
+                "You cannot delete the last active administrator.",
+                "danger",
+            )
             return redirect(url_for("admin.users"))
 
     conn = db.get_db()
@@ -413,20 +431,28 @@ def user_delete(user_id):
     try:
         audit(
             "user_delete",
-            f"Deleted {user['username']} ({user['full_name']}; {user['role']})",
+            (
+                f"Deleted {user['username']} "
+                f"({user['full_name']}; {user['role']})"
+            ),
             commit=False,
         )
+
         cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+
         if cursor.rowcount != 1:
             raise RuntimeError("The selected user could not be deleted.")
+
         conn.commit()
+
     except Exception:
         conn.rollback()
         raise
+
     finally:
         cursor.close()
 
-    flash(f"Account {user['username']} was deleted.", "success")
+    flash(f"Account {user['username']} deleted successfully.", "success")
     return redirect(url_for("admin.users"))
 
 
@@ -451,8 +477,8 @@ def services():
             or len(description) > 300
         ):
             flash(
-                "Enter a service name (3-80 characters), "
-                "a valid fee and a short description.",
+                "Enter a service name between 3 and 80 characters, "
+                "a valid fee, and a description of up to 300 characters.",
                 "danger",
             )
         else:
@@ -473,7 +499,7 @@ def services():
                 )
 
                 audit("service_create", name)
-                flash("Service added.", "success")
+                flash("Service added successfully.", "success")
 
             except IntegrityError:
                 db.rollback()
@@ -537,6 +563,7 @@ def audit_log():
 
     return render_template("admin/audit.html", rows=rows)
 
+
 @bp.route("/medicine-requests")
 @roles_required()
 def medicine_requests():
@@ -596,3 +623,214 @@ def medicine_requests():
         q=q,
         status=status,
     )
+
+
+@bp.route(
+    "/medicine-requests/<int:request_id>/approve",
+    methods=["POST"],
+)
+@roles_required()
+def medicine_request_approve(request_id):
+    conn = db.get_db()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # Lock the request to prevent duplicate processing.
+        cursor.execute(
+            """
+            SELECT id, reference_no, medicine_id, quantity, status
+            FROM medicine_requests
+            WHERE id = %s
+            FOR UPDATE
+            """,
+            (request_id,),
+        )
+        medicine_request = cursor.fetchone()
+
+        if medicine_request is None:
+            conn.rollback()
+            abort(404)
+
+        if medicine_request["status"] != "Pending":
+            conn.rollback()
+            flash("This request has already been processed.", "warning")
+            return redirect(url_for("admin.medicine_requests"))
+
+        # Lock the inventory row while checking available stock.
+        cursor.execute(
+            """
+            SELECT id, name, stock_quantity
+            FROM medicine_inventory
+            WHERE id = %s
+            FOR UPDATE
+            """,
+            (medicine_request["medicine_id"],),
+        )
+        medicine = cursor.fetchone()
+
+        if medicine is None:
+            conn.rollback()
+            flash(
+                "The requested medicine was not found in inventory.",
+                "danger",
+            )
+            return redirect(url_for("admin.medicine_requests"))
+
+        requested = int(medicine_request["quantity"])
+        available = int(medicine["stock_quantity"] or 0)
+
+        if requested <= 0:
+            conn.rollback()
+            flash("The requested quantity is invalid.", "danger")
+            return redirect(url_for("admin.medicine_requests"))
+
+        if available < requested:
+            conn.rollback()
+            flash(
+                f"Insufficient stock for {medicine['name']}. "
+                f"Available: {available}; requested: {requested}. "
+                "The request was not approved.",
+                "danger",
+            )
+            return redirect(url_for("admin.medicine_requests"))
+
+        remarks = (request.form.get("remarks") or "").strip()
+        new_stock = available - requested
+
+        # Deduct the requested quantity from inventory.
+        cursor.execute(
+            """
+            UPDATE medicine_inventory
+            SET stock_quantity = %s,
+                updated_by = %s,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = %s
+            """,
+            (new_stock, g.user["id"], medicine["id"]),
+        )
+
+        # Approve the request and save optional remarks.
+        cursor.execute(
+            """
+            UPDATE medicine_requests
+            SET status = 'Approved',
+                remarks = NULLIF(%s, '')
+            WHERE id = %s AND status = 'Pending'
+            """,
+            (remarks, request_id),
+        )
+
+        if cursor.rowcount != 1:
+            raise RuntimeError("Failed to update the medicine request status.")
+
+        # Trigger existing stock-change notifications.
+        from .health import _notify_medicine_stock_change
+
+        _notify_medicine_stock_change(
+            cursor,
+            medicine["id"],
+            medicine["name"],
+            available,
+            new_stock,
+        )
+
+        audit(
+            "medicine_request_approve",
+            (
+                f"Approved {medicine_request['reference_no']}: "
+                f"{medicine['name']}, quantity {requested}; "
+                f"stock {available} -> {new_stock}"
+            ),
+            commit=False,
+        )
+
+        conn.commit()
+
+        flash(
+            f"Medicine request approved successfully. "
+            f"{requested} unit(s) of {medicine['name']} deducted "
+            f"from inventory. Remaining stock: {new_stock}.",
+            "success",
+        )
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        cursor.close()
+
+    return redirect(url_for("admin.medicine_requests"))
+
+
+@bp.route(
+    "/medicine-requests/<int:request_id>/reject",
+    methods=["POST"],
+)
+@roles_required()
+def medicine_request_reject(request_id):
+    medicine_request = db.query(
+        """
+        SELECT id, reference_no, status
+        FROM medicine_requests
+        WHERE id = ?
+        """,
+        (request_id,),
+        one=True,
+    )
+
+    if medicine_request is None:
+        abort(404)
+
+    if medicine_request["status"] != "Pending":
+        flash("This request has already been processed.", "warning")
+        return redirect(url_for("admin.medicine_requests"))
+
+    remarks = (request.form.get("remarks") or "").strip()
+
+    if not remarks:
+        flash(
+            "Please provide a reason for rejecting this request.",
+            "danger",
+        )
+        return redirect(url_for("admin.medicine_requests"))
+
+    conn = db.get_db()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(
+            """
+            UPDATE medicine_requests
+            SET status = %s, remarks = %s
+            WHERE id = %s AND status = 'Pending'
+            """,
+            ("Rejected", remarks, request_id),
+        )
+
+        if cursor.rowcount != 1:
+            conn.rollback()
+            flash(
+                "Unable to reject the request. "
+                "It may have already been processed.",
+                "warning",
+            )
+            return redirect(url_for("admin.medicine_requests"))
+
+        audit(
+            "medicine_request_reject",
+            f"Rejected medicine request {medicine_request['reference_no']}",
+            commit=False,
+        )
+
+        conn.commit()
+        flash("Medicine request rejected successfully.", "success")
+
+    except Exception:
+        conn.rollback()
+        raise
+
+    finally:
+        cursor.close()
+
+    return redirect(url_for("admin.medicine_requests"))
