@@ -49,63 +49,111 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function getReply(question) {
         const q = question.toLowerCase();
-
-        if (q.includes("hello") || q === "hi" ||
-            q.includes("hi ") || q.includes("good morning") ||
-            q.includes("good afternoon")) {
-            return "Hello! How can I help you with e-RESBAHUB today?";
+   
+        // New request
+        if ((q.includes("request") || q.includes("mag-request")) &&
+            (q.includes("submit") || q.includes("new") ||
+            q.includes("apply") || q.includes("dokumento"))) {
+            return "Para mag-request ng dokumento, pumunta sa New Request, kumpletuhin ang mga kinakailangang impormasyon, at isumite ang iyong kahilingan. Pagkatapos, buksan ang My Requests upang tingnan ang status nito.";
         }
 
-        if (q.includes("verify") || q.includes("verification") ||
-            q.includes("pending account")) {
-            return "If your account is pending verification, barangay personnel must verify your submitted details. Please contact barangay personnel if you need an update.";
-        }
-
-        if (q.includes("request") && (q.includes("submit") || q.includes("new") || q.includes("apply"))) {
-            return "Open New Request from the sidebar, complete the required information, and submit the form. Then open My Requests to check the status.";
-        }
-
+        // Request status
         if (q.includes("request status") || q.includes("track request") ||
             q.includes("my request") || q.includes("approved") ||
-            q.includes("rejected")) {
-            return "Open My Requests to check your submitted requests and their current status. Contact barangay personnel if you need clarification.";
+            q.includes("rejected") || q.includes("status ng request") ||
+            q.includes("kahilingan ko")) {
+            return "Pumunta sa My Requests upang makita ang iyong mga naipasa na kahilingan at ang kasalukuyang status ng bawat isa. Makipag-ugnayan sa mga kawani ng barangay kung mayroon kang katanungan.";
         }
 
+        // Free medicines
         if (q.includes("medicine") || q.includes("medication") ||
-            q.includes("available drug")) {
-            return "Open Medicines to view the medicine information listed in the system. Please confirm stock and suitability with Health Center staff.";
+            q.includes("available drug") || q.includes("gamot") ||
+            q.includes("libreng gamot")) {
+            return "Pumunta sa Medicine upang makita ang listahan ng mga libreng gamot. Makikita mo rin kung available o ubos na ang stock. Para sa kumpirmasyon at wastong gabay, makipag-ugnayan sa mga kawani ng Health Center.";
         }
 
+        // Account verification
+        if (q.includes("verify") || q.includes("verification") ||
+            q.includes("pending account") || q.includes("beripikasyon") ||
+            q.includes("i-verify") || q.includes("verify account")) {
+            return "Kung nakabinbin pa ang beripikasyon ng iyong account, kailangang suriin at kumpirmahin ng mga kawani ng barangay ang impormasyong iyong isinumite. Makipag-ugnayan sa kanila kung nais mong malaman ang update tungkol sa iyong account.";
+        }
+
+        // Registration
+        if (q.includes("register") || q.includes("magrehistro") ||
+            q.includes("gumawa ng account")) {
+            return "Para gumawa ng account, pumunta sa Register page at punan ang mga kinakailangang impormasyon. Siguraduhing tama ang iyong mga detalye bago isumite ang registration form.";
+        }
+
+        // Announcements
         if (q.includes("announcement") || q.includes("event") ||
-            q.includes("schedule")) {
-            return "Open Announcements in the sidebar to check the latest information posted by barangay personnel.";
+            q.includes("schedule") || q.includes("anunsyo")) {
+            return "Pumunta sa Announcements upang makita ang mga pinakabagong impormasyon, aktibidad, at iskedyul na inilathala ng mga kawani ng barangay.";
         }
 
-        if (q.includes("notification")) {
-            return "Open Notifications in the sidebar to review the notifications available to your account.";
+        // Notifications
+        if (q.includes("notification") || q.includes("abiso") ||
+            q.includes("paunawa")) {
+            return "Pumunta sa Notifications upang makita at basahin ang mga abisong ipinadala sa iyong account.";
         }
 
+        // Profile
         if (q.includes("profile") || q.includes("update details") ||
-            q.includes("personal information")) {
-            return "Open My Profile to review or update the personal information your account allows you to change.";
+            q.includes("personal information") || q.includes("profile ko") ||
+            q.includes("baguhin ang aking profile")) {
+            return "Pumunta sa My Profile upang tingnan o i-update ang iyong personal na impormasyon, depende sa mga impormasyong pinapayagan ng system na baguhin.";
         }
 
-        if (q.includes("password")) {
-            return "If you forgot your password, please contact the barangay system administrator for assistance in recovering your account. For your security, never share your password with anyone. If a password reset option is available on the login page, you may use it to reset your password.";
+        // Password
+        if (q.includes("password") || q.includes("nakalimutan ang password") ||
+            q.includes("nakalimutan ko ang password")) {
+            return "Kung nakalimutan mo ang iyong password, pumunta sa Login page at piliin ang Forgot Password. Ilagay ang iyong rehistradong email address at sundin ang mga tagubilin upang makapag-reset ng password. Huwag ibahagi ang iyong password kaninuman.";
         }
 
+        // Contact barangay
         if (q.includes("contact") || q.includes("personnel") ||
-            q.includes("staff") || q.includes("help")) {
-            return "For account verification, request concerns, or official assistance, please contact the barangay office or Health Center staff.";
+            q.includes("staff") || q.includes("help") ||
+            q.includes("tulong") || q.includes("makipag-ugnayan")) {
+            return "Para sa beripikasyon ng account, mga katanungan tungkol sa iyong request, o iba pang opisyal na tulong, mangyaring makipag-ugnayan sa tanggapan ng barangay o sa mga kawani ng Health Center.";
         }
 
-        if (q.includes("diagnosis") || q.includes("symptom") ||
-            q.includes("what medicine") || q.includes("dosage")) {
-            return "I cannot diagnose conditions or recommend medicines or dosages. Please consult a qualified healthcare professional or your Health Center.";
+        // Pending status
+        if (q.includes("ano ang pending") ||
+            q.includes("meaning ng pending")) {
+            return "Ang Pending ay nangangahulugang natanggap na ng system ang iyong request ngunit hindi pa ito naaaprubahan o napoproseso ng mga kawani ng barangay.";
         }
 
-        return "I'm sorry, I don't have an answer for that yet. Try asking about requests, account verification, medicines, announcements, or your profile.";
-    }
+        // Rejected request
+        if (q.includes("bakit rejected") ||
+            q.includes("rejected ang request")) {
+            return "Kung rejected ang iyong request, tingnan ang mga detalye o dahilan kung mayroon itong nakasaad. Maaari ka ring makipag-ugnayan sa mga kawani ng barangay para malaman kung ano ang dapat gawin.";
+        }
+
+        // Login problem
+        if (q.includes("hindi makapag-login") ||
+            q.includes("login problem") ||
+            q.includes("cannot login")) {
+            return "Kung hindi ka makapag-login, tiyaking tama ang iyong email address at password. Kung nakalimutan mo ang iyong password, gamitin ang Forgot Password option sa Login page kung available ito. Kung magpapatuloy ang problema, makipag-ugnayan sa system administrator.";
+        }
+
+        if (q.includes("anong oras nagbubukas") || q.includes("office hours")) {
+            return "Para malaman ang eksaktong oras ng pagbubukas ng Barangay Hall, mangyaring makipag-ugnayan sa mga kawani ng barangay.";
+        }
+
+        if (q.includes("barangay health worker") || q.includes("bhw")) {
+            return "Maaari kang magtanong sa Barangay Health Center upang makipag-ugnayan sa Barangay Health Worker.";
+        }
+
+        if (q.includes("bakuna") || q.includes("vaccination")) {
+            return "Para sa impormasyon tungkol sa bakuna, available na schedule, at requirements, mangyaring magtanong sa Barangay Health Center.";
+        }
+
+        if (q.includes("maternal health") || q.includes("kalusugan ng buntis")) {
+            return "Para sa impormasyon tungkol sa maternal health services, mangyaring makipag-ugnayan sa Barangay Health Center.";
+        }
+
+        return "Paumanhin, wala pa akong sagot para sa iyong katanungan. Maaari kang magtanong tungkol sa mga request, beripikasyon ng account, libreng gamot, mga anunsyo, notifications, o iyong profile.";
+        }
 
     function sendMessage(question) {
         question = question.trim();
