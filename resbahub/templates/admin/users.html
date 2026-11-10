@@ -8,7 +8,7 @@
   {{ select('role', 'Role', roles.items()|list, role, blank='All roles') }}
   <button class="btn secondary" type="submit">Filter</button>
 </form>
-<div class="card table-wrap"><table>
+<table class="card table-wrap"></table>
   <tr><th>Username</th><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last login</th><th>Actions</th></tr>
   {% for u in rows %}
   <tr><td>{{ u.username }}</td><td>{{ u.full_name }}</td><td>{{ u.email }}</td><td>{{ u.position_title or roles[u.role] }}</td>

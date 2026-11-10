@@ -30,6 +30,8 @@ bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 STAFF_CHOICES = ["barangay_staff", "health_staff", "admin"]
 
+MEDICINE_REQUEST_ACCESS = ("health_staff",)
+
 
 @bp.route("/")
 @roles_required()
@@ -565,7 +567,7 @@ def audit_log():
 
 
 @bp.route("/medicine-requests")
-@roles_required()
+@roles_required(*MEDICINE_REQUEST_ACCESS)
 def medicine_requests():
     q = (request.args.get("q") or "").strip()
     status = (request.args.get("status") or "").strip()
@@ -629,7 +631,7 @@ def medicine_requests():
     "/medicine-requests/<int:request_id>/approve",
     methods=["POST"],
 )
-@roles_required()
+@roles_required(*MEDICINE_REQUEST_ACCESS)
 def medicine_request_approve(request_id):
     conn = db.get_db()
     cursor = conn.cursor(dictionary=True)
@@ -767,7 +769,7 @@ def medicine_request_approve(request_id):
     "/medicine-requests/<int:request_id>/reject",
     methods=["POST"],
 )
-@roles_required()
+@roles_required(*MEDICINE_REQUEST_ACCESS)
 def medicine_request_reject(request_id):
     medicine_request = db.query(
         """
